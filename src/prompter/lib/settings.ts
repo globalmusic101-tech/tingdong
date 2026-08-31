@@ -1,7 +1,16 @@
 import type { ReadMode } from './extractChinese';
 import type { Gender, Tone } from './tts/voiceMap';
 
+/**
+ * 기본값을 손볼 때마다 올린다.
+ * 저장된 설정이 기본값을 영원히 덮는 문제를 막는다 — 예전 버전에서 저장된 값은
+ * 새 기본값으로 한 번 초기화된다.
+ */
+export const SETTINGS_VERSION = 2;
+
 export type PrompterSettings = {
+  /** 이 설정이 어느 기본값 세대에서 저장됐는가 */
+  version: number;
   engine: 'edge' | 'local';
   /** 소리 없이 프롬프터로만 쓴다 */
   muted: boolean;
@@ -27,6 +36,7 @@ export type PrompterSettings = {
 };
 
 export const DEFAULT_SETTINGS: PrompterSettings = {
+  version: SETTINGS_VERSION,
   engine: 'edge',
   muted: false,
   gender: 'male',
@@ -59,6 +69,12 @@ export function loadSettings(): PrompterSettings {
       showPinyin?: boolean;
       chineseOnly?: boolean;
     };
+
+    // 기본값이 바뀌었다면 저장된 값이 그것을 덮지 않게 한 번 새로 시작한다
+    if (stored.version !== SETTINGS_VERSION) {
+      saveSettings(DEFAULT_SETTINGS);
+      return DEFAULT_SETTINGS;
+    }
     const merged = { ...DEFAULT_SETTINGS, ...stored };
 
     // 예전에는 병음이 켬/끔뿐이었다 — 켜져 있었다면 아래 한 줄로 옮긴다
