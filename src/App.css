@@ -1,0 +1,619 @@
+:root {
+  --google-blue: #1a73e8;
+  --google-blue-hover: #1557b0;
+  --google-bg: #f8f9fa;
+  --border-color: #dadce0;
+  --text-dark: #3c4043;
+  --text-light: #70757a;
+  
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #3c4043;
+  --text-secondary: #70757a;
+  
+  --accent: #1a73e8;
+  --accent-hover: #1557b0;
+  --highlight-bg: rgba(26, 115, 232, 0.12);
+  --highlight-border: #1a73e8;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--text-dark);
+  font-family: 'Roboto', 'Google Sans', Arial, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  display: block;
+}
+
+#root {
+  height: auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 0;
+  gap: 0;
+  background-color: #ffffff;
+}
+
+/* Header style inspired by Google Translate */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #fff;
+  height: 64px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.logo-section h1 {
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #5f6368;
+  margin: 0;
+}
+
+.controls {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.settings-toggle-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  transition: background-color 0.2s;
+}
+
+.settings-toggle-btn:hover {
+  background-color: #f1f3f4;
+}
+
+.toggle-container {
+  display: flex;
+  background: #f1f3f4;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: #fff;
+  color: var(--google-blue);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Settings Box */
+.settings-pane {
+  background-color: #fff;
+  border-bottom: 1px solid var(--border-color);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.settings-pane h3 {
+  margin: 0 0 2px 0;
+  font-size: 1rem;
+  color: var(--text-dark);
+}
+
+.setting-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.setting-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-light);
+  min-width: 110px;
+  padding-top: 10px;
+}
+
+/* Engine Selection Cards */
+.engine-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-width: 130px;
+}
+
+.engine-option input[type="radio"] {
+  display: none;
+}
+
+.engine-option span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.engine-option small {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.engine-option:hover {
+  border-color: var(--google-blue);
+  background-color: rgba(26, 115, 232, 0.04);
+}
+
+.engine-option.selected {
+  border-color: var(--google-blue);
+  background-color: rgba(26, 115, 232, 0.08);
+  box-shadow: 0 0 0 1px var(--google-blue);
+}
+
+.engine-option.selected span {
+  color: var(--google-blue);
+}
+
+/* Info box below engine selection */
+.setting-info-box {
+  background-color: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.setting-info-box p {
+  margin: 0;
+}
+
+.setting-info-box a {
+  color: var(--google-blue);
+  text-decoration: none;
+}
+
+.setting-info-box a:hover {
+  text-decoration: underline;
+}
+
+.api-key-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.api-key-input:focus {
+  border-color: var(--google-blue);
+}
+
+.save-btn {
+  background-color: var(--google-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background-color 0.2s;
+}
+
+.save-btn:hover {
+  background-color: var(--google-blue-hover);
+}
+
+/* Engine status badge in right pane header */
+.engine-status-badge {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  background-color: #f1f3f4;
+  border-radius: 12px;
+  padding: 2px 10px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+/* Split View Layout */
+.split-view {
+  display: flex;
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f5f5f5;
+  padding: 16px;
+  gap: 16px;
+}
+
+.pane {
+  flex: 1;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+}
+
+.pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  height: 48px;
+  font-size: 0.875rem;
+  color: var(--text-light);
+  font-weight: 500;
+  background-color: #fff;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-btn:hover {
+  background-color: #f1f3f4;
+  color: var(--text-dark);
+}
+
+.pane-content-wrapper {
+  flex: 1;
+  padding: 24px 28px;
+  overflow-y: auto;
+  cursor: text;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.text-input {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 1.5rem;
+  line-height: 1.6;
+  color: var(--text-dark);
+  font-family: inherit;
+  background-color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.placeholder-text {
+  color: #9aa0a6;
+  font-size: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Interactive study/view mode */
+.study-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.word-block {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.pinyin {
+  font-size: 0.8rem;
+  color: white;
+  background-color: var(--google-blue);
+  padding: 1px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.punctuation-block {
+  display: inline-block;
+  color: var(--text-dark);
+}
+
+.chinese-sentence-wrapper {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.chinese-sentence-wrapper.active {
+  border-bottom-color: rgba(26, 115, 232, 0.4);
+}
+
+
+/* ==========================================================================
+   LAYOUT MODE 1: 문장형 (Paragraph Flow - Default)
+   - Zero gaps between words/characters, flows naturally like standard Chinese.
+   ========================================================================== */
+.layout-mode-paragraph .study-mode {
+  font-size: 1.5rem;
+  line-height: 1.6;
+  gap: 0;
+  letter-spacing: 0.5px;
+}
+
+.layout-mode-paragraph .word-block {
+  padding: 0px 0.5px;
+  margin: 0;
+  display: inline-flex;
+}
+
+.layout-mode-paragraph .punctuation-block {
+  padding: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Option 1: Hover Pinyin (Default) for Paragraph Mode */
+.pinyin-mode-hover.layout-mode-paragraph .pinyin {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  transition: all 0.15s ease-out;
+}
+
+.pinyin-mode-hover.layout-mode-paragraph .word-block:hover .pinyin {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pinyin-mode-hover.layout-mode-paragraph .word-block:hover, 
+.pinyin-mode-hover.layout-mode-paragraph .word-block.highlighted {
+  background-color: var(--highlight-bg);
+  border-color: var(--highlight-border);
+}
+
+
+/* Option 2: Always Show Pinyin for Paragraph Mode */
+.pinyin-mode-always.layout-mode-paragraph .study-mode {
+  line-height: 2.8;
+}
+
+.pinyin-mode-always.layout-mode-paragraph .word-block {
+  padding: 0px 1px;
+}
+
+.pinyin-mode-always.layout-mode-paragraph .pinyin {
+  position: static;
+  display: block;
+  font-size: 0.85rem;
+  color: var(--google-blue);
+  background-color: transparent;
+  padding: 0;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+  height: 18px;
+  line-height: 18px;
+  margin-bottom: -2px;
+}
+
+.pinyin-mode-always.layout-mode-paragraph .punctuation-block {
+  line-height: 2.8;
+  margin-top: 18px;
+}
+
+.pinyin-mode-always.layout-mode-paragraph .word-block:hover, 
+.pinyin-mode-always.layout-mode-paragraph .word-block.highlighted {
+  background-color: var(--highlight-bg);
+  border-color: var(--highlight-border);
+}
+
+
+/* ==========================================================================
+   LAYOUT MODE 2: 단어형 (Spaced Blocks - Optional)
+   - Visibly separated blocks with padding and gaps.
+   ========================================================================== */
+.layout-mode-spaced .study-mode {
+  font-size: 1.4rem;
+  gap: 6px 10px;
+}
+
+.layout-mode-spaced .word-block {
+  padding: 2px 6px;
+  margin: 0 2px;
+  background-color: #f1f3f4;
+  border-radius: 4px;
+}
+
+.layout-mode-spaced .punctuation-block {
+  font-size: 1.4rem;
+  padding: 2px 2px;
+}
+
+/* Option 1: Hover Pinyin for Spaced Mode */
+.pinyin-mode-hover.layout-mode-spaced .study-mode {
+  line-height: 1.8;
+}
+
+.pinyin-mode-hover.layout-mode-spaced .pinyin {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  transition: all 0.15s ease-out;
+}
+
+.pinyin-mode-hover.layout-mode-spaced .word-block:hover .pinyin {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pinyin-mode-hover.layout-mode-spaced .word-block:hover, 
+.pinyin-mode-hover.layout-mode-spaced .word-block.highlighted {
+  background-color: var(--highlight-bg);
+  border-color: var(--highlight-border);
+}
+
+/* Option 2: Always Show Pinyin for Spaced Mode */
+.pinyin-mode-always.layout-mode-spaced .study-mode {
+  line-height: 2.8;
+}
+
+.pinyin-mode-always.layout-mode-spaced .pinyin {
+  position: static;
+  display: block;
+  font-size: 0.85rem;
+  color: var(--google-blue);
+  background-color: transparent;
+  padding: 0;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+  height: 18px;
+  line-height: 18px;
+  margin-bottom: 2px;
+}
+
+.pinyin-mode-always.layout-mode-spaced .punctuation-block {
+  line-height: 2.8;
+  margin-top: 18px;
+}
+
+.pinyin-mode-always.layout-mode-spaced .word-block:hover, 
+.pinyin-mode-always.layout-mode-spaced .word-block.highlighted {
+  background-color: var(--highlight-bg);
+  border-color: var(--highlight-border);
+}
+
+
+/* ==========================================================================
+   RIGHT PANE: Korean Translation Paragraph View
+   ========================================================================== */
+.localized-paragraph-view {
+  font-size: 1.5rem;
+  line-height: 1.6; /* Tightened line-height to match left Chinese */
+  word-break: keep-all;
+}
+
+.sentence-block {
+  display: inline;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.sentence-block.underlined {
+  border-bottom-color: var(--google-blue);
+  background-color: rgba(26, 115, 232, 0.05); /* Highlight the sentence area slightly */
+}
+
+.translation-block {
+  display: inline-block;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.translation-block.highlighted {
+  background-color: var(--highlight-bg);
+  border-color: var(--highlight-border);
+}
+
+/* Footers */
+.pane-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  border-top: 1px solid #f1f3f4;
+  height: 36px;
+  background-color: #fff;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.study-hint {
+  color: var(--google-blue);
+  font-weight: 500;
+}
+
+.loading-indicator {
+  color: var(--google-blue);
+  font-weight: 500;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+  .split-view {
+    flex-direction: column;
+  }
+  .pane {
+    min-height: 300px;
+  }
+}

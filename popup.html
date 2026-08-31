@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --bg-dark: rgba(32, 33, 36, 0.9);
+      --bg-active: rgba(48, 49, 52, 0.95);
+      --border-color: rgba(218, 220, 224, 0.15);
+      --text-main: #e8eaed;
+      --text-sub: #9aa0a6;
+      --accent: #8ab4f8;
+      --accent-hover: #aecbfa;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      background: transparent;
+      color: var(--text-main);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .card {
+      background: var(--bg-dark);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      transition: background 0.2s;
+    }
+
+    .card:active {
+      background: var(--bg-active);
+    }
+
+    /* Drag handle at the top */
+    .drag-handle {
+      -webkit-app-region: drag;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+      cursor: move;
+    }
+
+    .drag-line {
+      width: 36px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      -webkit-app-region: no-drag;
+    }
+
+    .source-text-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 80%;
+    }
+
+    .chinese {
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .pinyin {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      -webkit-app-region: no-drag;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .icon-btn.active {
+      color: var(--accent);
+    }
+
+    .divider {
+      border: none;
+      height: 1px;
+      background: var(--border-color);
+      margin: 10px 0;
+    }
+
+    .content-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+      -webkit-app-region: no-drag;
+    }
+
+    /* Scrollbar */
+    .content-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .content-body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .translation-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .translation {
+      font-size: 1.05rem;
+      color: #ffffff;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .pos-tag {
+      font-size: 0.75rem;
+      background: rgba(138, 180, 248, 0.15);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .usage-box {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid var(--accent);
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.85rem;
+    }
+
+    .usage-title {
+      font-weight: 600;
+      color: var(--text-sub);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .usage-example {
+      color: var(--text-main);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .usage-example-ko {
+      color: var(--text-sub);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      margin-top: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="drag-handle">
+      <div class="drag-line"></div>
+    </div>
+
+    <div class="header">
+      <div class="source-text-row">
+        <span class="chinese" id="chinese-text">...</span>
+        <span class="pinyin" id="pinyin-text">...</span>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="speak-btn" title="발음 듣기">🔊</button>
+        <button class="icon-btn" id="copy-btn" title="복사">📋</button>
+        <button class="icon-btn" id="pin-btn" title="핀 고정">📌</button>
+        <button class="icon-btn" id="close-btn" title="닫기 (ESC)">✕</button>
+      </div>
+    </div>
+
+    <!-- 클립보드 복사 에러 경고 배너 -->
+    <div id="copy-warning" style="display: none; font-size: 0.72rem; color: #f28b82; padding: 6px 8px; background: rgba(242, 139, 130, 0.08); border-radius: 6px; margin: 6px 0; -webkit-app-region: no-drag; border: 1px solid rgba(242, 139, 130, 0.15); line-height: 1.35;">
+      <span id="warning-text">⚠️ 클립보드 자동 복사에 실패했습니다. macOS의 '시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용(Accessibility)'에서 이 앱(또는 실행 중인 터미널)의 권한이 켜져 있는지 확인해 주세요. (미허용 시 직접 <b>Cmd+C</b> 복사 후 단축키를 눌러야 작동합니다.)</span>
+      <button id="grant-btn" style="display: none; margin-top: 4px; padding: 2px 6px; background: #f28b82; color: #202124; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.7rem;">권한 설정 열기</button>
+    </div>
+
+    <div id="full-content" style="display: none;">
+      <div class="divider"></div>
+      <div class="content-body">
+        <div class="translation-row">
+          <span class="translation" id="translation-text">번역 로딩 중...</span>
+          <span class="pos-tag" id="pos-tag" style="display: none;">품사</span>
+        </div>
+        <div class="usage-box" id="usage-box" style="display: none;">
+          <span class="usage-title">💡 Usage / Example</span>
+          <span class="usage-example" id="example-zh"></span>
+          <span class="usage-example-ko" id="example-ko"></span>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span id="engine-badge" class="badge">Google 번역</span>
+        <span>Esc를 누르거나 외부를 클릭하면 닫힙니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chineseText = document.getElementById('chinese-text');
+    const pinyinText = document.getElementById('pinyin-text');
+    const translationText = document.getElementById('translation-text');
+    const posTag = document.getElementById('pos-tag');
+    const usageBox = document.getElementById('usage-box');
+    const exampleZh = document.getElementById('example-zh');
+    const exampleKo = document.getElementById('example-ko');
+    const engineBadge = document.getElementById('engine-badge');
+
+    const speakBtn = document.getElementById('speak-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const pinBtn = document.getElementById('pin-btn');
+    const closeBtn = document.getElementById('close-btn');
+    const fullContent = document.getElementById('full-content');
+
+    let currentText = '';
+    let currentTranslation = '';
+    let isPinned = false;
+
+    // ESC 닫기
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.electronAPI.closePopup();
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      window.electronAPI.closePopup();
+    });
+
+    pinBtn.addEventListener('click', () => {
+      isPinned = !isPinned;
+      pinBtn.classList.toggle('active', isPinned);
+      window.electronAPI.setPinned(isPinned);
+    });
+
+    speakBtn.addEventListener('click', () => {
+      if (!currentText || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentText);
+      utterance.lang = 'zh-CN';
+      window.speechSynthesis.speak(utterance);
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      if (!currentText) return;
+      try {
+        const textToCopy = `${currentText} [${pinyinText.textContent}] ${currentTranslation}`;
+        await navigator.clipboard.writeText(textToCopy);
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✅';
+        setTimeout(() => copyBtn.textContent = originalText, 1000);
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+    });
+
+    const copyWarning = document.getElementById('copy-warning');
+    const warningText = document.getElementById('warning-text');
+    const grantBtn = document.getElementById('grant-btn');
+
+    if (grantBtn) {
+      grantBtn.addEventListener('click', () => {
+        if (window.electronAPI.requestAccessibility) {
+          window.electronAPI.requestAccessibility();
+        }
+      });
+    }
+
+    // 메인 프로세스로부터 번역할 텍스트 수신
+    window.electronAPI.onTranslateText(async (data) => {
+      const text = data.text;
+      const py = data.pinyin;
+      const copyFailed = data.copyFailed;
+      const isAccessibilityTrusted = data.isAccessibilityTrusted !== false;
+      
+      currentText = text;
+      chineseText.textContent = text;
+      pinyinText.textContent = py;
+
+      if (!isAccessibilityTrusted) {
+        warningText.innerHTML = '⚠️ 클립보드 자동 복사에 실패했습니다. macOS의 \'시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용(Accessibility)\'에서 이 앱(또는 실행 중인 터미널)의 권한이 켜져 있는지 확인해 주세요. (미허용 시 직접 <b>Cmd+C</b> 복사 후 단축키를 눌러야 작동합니다.)';
+        grantBtn.style.display = 'inline-block';
+        copyWarning.style.display = 'block';
+      } else if (copyFailed) {
+        warningText.innerHTML = '⚠️ 선택된 텍스트가 없습니다. 마우스 드래그로 텍스트를 선택한 후 단축키를 눌러주세요.';
+        grantBtn.style.display = 'none';
+        copyWarning.style.display = 'block';
+      } else {
+        copyWarning.style.display = 'none';
+      }
+
+      // 초기 크기 (헤더만 노출)
+      fullContent.style.display = 'none';
+      window.electronAPI.resize(90);
+
+      // 설정 정보 로드 (메인 창의 localStorage 연동 대신 기본 키값 폴백 처리)
+      const apiType = localStorage.getItem('study_api_type') || 'free';
+      const apiKey = localStorage.getItem('study_api_key') || '';
+      const lmStudioUrl = localStorage.getItem('study_lmstudio_url') || 'http://localhost:1234';
+
+      // 팝업 상세 활성화 및 크기 리사이징
+      fullContent.style.display = 'block';
+      
+      // 번역 API 처리
+      await doTranslation(text, apiType, apiKey, lmStudioUrl);
+    });
+
+    async function doTranslation(text, apiType, apiKey, lmStudioUrl) {
+      translationText.textContent = '번역 엔진 호출 중...';
+      posTag.style.display = 'none';
+      usageBox.style.display = 'none';
+
+      try {
+        if (apiType === 'gemini' && apiKey) {
+          engineBadge.textContent = '✨ Gemini API';
+          const res = await callGeminiLLM(text, apiKey);
+          applyLLMResult(res);
+        } else if (apiType === 'openai' && apiKey) {
+          engineBadge.textContent = '🤖 OpenAI API';
+          const res = await callOpenAILLM(text, apiKey);
+          applyLLMResult(res);
+        } else if (apiType === 'lmstudio') {
+          engineBadge.textContent = '🖥️ LM Studio';
+          const res = await callLMStudio(text, lmStudioUrl);
+          applyLLMResult(res);
+        } else {
+          // Free Google 번역
+          engineBadge.textContent = '🌐 Google 무료 번역';
+          const resultText = await callGoogleFree(text);
+          currentTranslation = resultText;
+          translationText.textContent = resultText;
+          updateHeight();
+        }
+      } catch (err) {
+        console.warn('API 호출 실패, 무료 번역으로 폴백:', err);
+        engineBadge.textContent = '⚠️ Google 무료 (대체됨)';
+        try {
+          const resultText = await callGoogleFree(text);
+          currentTranslation = resultText;
+          translationText.textContent = resultText;
+        } catch (fbErr) {
+          translationText.textContent = '번역을 가져올 수 없습니다.';
+        }
+        updateHeight();
+      }
+    }
+
+    function applyLLMResult(data) {
+      if (!data) return;
+      currentTranslation = data.translation || '';
+      translationText.textContent = data.translation || '번역 정보 없음';
+      
+      if (data.partOfSpeech) {
+        posTag.textContent = data.partOfSpeech;
+        posTag.style.display = 'inline-block';
+      }
+      
+      if (data.exampleChinese && data.exampleKorean) {
+        exampleZh.textContent = data.exampleChinese;
+        exampleKo.textContent = data.exampleKorean;
+        usageBox.style.display = 'flex';
+      }
+      updateHeight();
+    }
+
+    function updateHeight() {
+      // 렌더링 완료 후 실제 카드의 전체 스크롤 영역에 맞춰 윈도우 크기를 동적으로 최적화
+      setTimeout(() => {
+        const cardEl = document.querySelector('.card');
+        if (cardEl) {
+          const contentH = cardEl.scrollHeight;
+          window.electronAPI.resize(contentH + 8);
+        }
+      }, 50);
+    }
+
+    // ── 각 번역 API 구현 ──
+
+    async function callGoogleFree(text) {
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ko&dt=t&q=${encodeURIComponent(text)}`
+      );
+      if (!response.ok) throw new Error('Google Free HTTP error');
+      const data = await response.json();
+      return data[0].map(item => item[0]).join('');
+    }
+
+    const systemPrompt = `You are a professional Chinese-to-Korean translator and lexicographer. 
+Analyze the given Chinese text/word and return a JSON object with the following fields:
+{
+  "translation": "한국어 뜻(문맥에 맞거나 사전식 단어 정의)",
+  "partOfSpeech": "품사 (예: 동사, 명사, 대명사, 형용사, 부사, 동사구, 대명사구, 성어 등)",
+  "exampleChinese": "중국어 예문",
+  "exampleKorean": "예문에 대한 자연스러운 한국어 번역"
+}
+Ensure example sentences are highly helpful for study. Respond ONLY with a valid JSON block, no markdown formatting tags.`;
+
+    async function callGeminiLLM(text, key) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\nTarget Chinese: ${text}` }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+          })
+        }
+      );
+      if (!response.ok) throw new Error('Gemini API HTTP error');
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+      return JSON.parse(rawText);
+    }
+
+    async function callOpenAILLM(text, key) {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: text }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+      if (!response.ok) throw new Error('OpenAI API HTTP error');
+      const data = await response.json();
+      const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
+      return JSON.parse(rawText);
+    }
+
+    async function callLMStudio(text, url) {
+      const response = await fetch(`${url}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'local-model',
+          messages: [
+            { role: 'system', content: systemPrompt + " (Respond in raw JSON format only)" },
+            { role: 'user', content: text }
+          ],
+          temperature: 0.1
+        })
+      });
+      if (!response.ok) throw new Error('LM Studio HTTP error');
+      const data = await response.json();
+      const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
+      // 마크다운 백틱 코드블록이 씌워져서 반환될 수 있으므로 정제
+      const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanedText);
+    }
+  </script>
+</body>
+</html>
