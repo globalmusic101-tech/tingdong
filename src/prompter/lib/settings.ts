@@ -6,7 +6,7 @@ import type { Gender, Tone } from './tts/voiceMap';
  * 저장된 설정이 기본값을 영원히 덮는 문제를 막는다 — 예전 버전에서 저장된 값은
  * 새 기본값으로 한 번 초기화된다.
  */
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 
 export type PrompterSettings = {
   /** 이 설정이 어느 기본값 세대에서 저장됐는가 */
@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   muted: false,
   gender: 'male',
   tone: 'sermon',
-  rate: 0.95,
+  rate: 1,
   pitchPct: 0,
   pinyinMode: 'above',
   autoAdvance: false,
