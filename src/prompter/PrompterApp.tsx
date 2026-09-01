@@ -172,6 +172,7 @@ export function PrompterApp() {
         <span><kbd>↑</kbd><kbd>↓</kbd> 이동</span>
         <span><kbd>Enter</kbd> 다시 듣기</span>
         <span><kbd>Esc</kbd> 정지</span>
+        <span>단어에 마우스 = 뜻</span>
         <span><kbd>Shift</kbd>+이동 = 소리 없이</span>
         <span><kbd>[</kbd><kbd>]</kbd> 속도</span>
         <span>휠로 원고 훑기</span>

@@ -562,3 +562,166 @@
   font-size: 11.5px;
   color: var(--text-secondary);
 }
+
+/* ── 단어 뜻 보기 ──────────────────────────────────── */
+/* 단어 칸은 줄바꿈과 병음 배치를 건드리면 안 되므로 inline 그대로 둔다 */
+.pr-word {
+  border-radius: 4px;
+  transition: background 120ms ease;
+}
+.pr-word.is-lookup {
+  cursor: help;
+}
+.pr-word.is-lookup:hover,
+.pr-word.is-looked-up {
+  background: var(--highlight-bg);
+}
+
+/* 읽던 줄을 가리지 않도록 화면 아래에 고정한다 */
+.pr-word-card {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  font-size: 28px;
+  color: var(--text-primary);
+  /* 잘라내지 않는다 — 내용만큼 커지고, 그만큼 문장이 위로 올라간다.
+     높이 상한은 화면 쪽에서 재서 넣는다(읽는 문장을 덮지 않는 선). */
+  overflow-y: auto;
+}
+
+/* 문장 뜻 — 카드의 본체 */
+.pr-word-card-sentence {
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.pr-word-card-dim {
+  color: var(--text-secondary);
+}
+
+/* 단어를 짚었을 때만 문장 뜻 '위로' 붙는다.
+   카드가 아래에 고정돼 있어 위로 자라므로, 이래야 번역 줄이 제자리에 있는다. */
+.pr-word-card-word {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pr-word-card-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.pr-word-card-zh {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pr-word-card-py {
+  color: var(--accent);
+  font-size: 26px;
+}
+
+.pr-word-card-pos {
+  padding: 2px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 22px;
+}
+
+.pr-word-card-close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 26px;
+  cursor: pointer;
+  line-height: 1;
+}
+.pr-word-card-close:hover { color: var(--text-primary); }
+
+.pr-word-card-body {
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pr-word-card-eg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  font-size: 25px;
+  line-height: 1.45;
+}
+
+/* '예문' / '이 문장에서' 같은 꼬리표 — 본문보다 작게 둬야 뜻이 먼저 읽힌다 */
+.pr-word-card-eg-label {
+  flex: 0 0 auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.pr-word-card-eg mark {
+  background: var(--highlight-bg);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.pr-word-card-eg-ko {
+  flex-basis: 100%;
+}
+
+/* 사전 엔진이 실패해 무료 뜻만 온 경우 */
+.pr-word-card-warn {
+  margin-top: 6px;
+  color: #b06000;
+  font-size: 18px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 실패 사유는 접어두지 않는다 — 툴팁에 숨기면 정작 필요할 때 못 본다 */
+.pr-word-card-why {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+  user-select: text;
+}
+
+/* 한도에 막혔을 때 설정 창까지 가지 않고 바로 빠져나가는 길 */
+.pr-word-card-switch {
+  margin-left: 8px;
+  padding: 1px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.pr-word-card-switch:hover {
+  background: #fef7e0;
+}
