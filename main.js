@@ -105,7 +105,11 @@ function createPopupWindow() {
     },
   });
 
-  popupWindow.loadFile(path.join(__dirname, 'popup.html'));
+  if (process.env.NODE_ENV === 'development') {
+    popupWindow.loadURL('http://localhost:5173/popup.html');
+  } else {
+    popupWindow.loadFile(path.join(__dirname, 'dist/popup.html'));
+  }
 
   // 포커스 잃으면 숨김 (고정 모드가 아닐 때)
   popupWindow.on('blur', () => {
@@ -146,6 +150,10 @@ function createTray() {
   tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
 }
 
+// 번역기 탭이 마지막으로 알려준 엔진 설정. 팝업 창은 localStorage를 공유하지
+// 못하므로, 여기에 받아 두었다가 팝업을 띄울 때 같이 넘겨준다.
+let engineConfig = null;
+
 // ── 팝업 번역 표시 공통 함수 ──────────────────────────────
 function displayPopupWithText(selectedText, copySuccess = true) {
   if (!popupWindow) return;
@@ -178,7 +186,8 @@ function displayPopupWithText(selectedText, copySuccess = true) {
     text: selectedText,
     pinyin: computedPinyin,
     copyFailed: !copySuccess,
-    isAccessibilityTrusted: isTrusted
+    isAccessibilityTrusted: isTrusted,
+    engine: engineConfig
   });
 }
 
@@ -252,6 +261,10 @@ ipcMain.on('resize-popup', (_, height) => {
     const newH = Math.max(90, Math.min(height, 480));
     popupWindow.setBounds({ ...b, height: newH });
   }
+});
+
+ipcMain.on('sync-engine-config', (_, cfg) => {
+  engineConfig = cfg;
 });
 
 ipcMain.on('request-accessibility', () => {

@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setPinned: (pinned) => ipcRenderer.send('pin-popup', pinned),
   resize: (height) => ipcRenderer.send('resize-popup', height),
   requestAccessibility: () => ipcRenderer.send('request-accessibility'),
+  // 번역기 탭의 엔진 설정을 메인 프로세스에 맡겨둔다 — 팝업 창은 localStorage를 공유하지 못한다
+  syncEngineConfig: (cfg) => ipcRenderer.send('sync-engine-config', cfg),
   // 설정 정보 읽기/쓰기를 위한 localStorage 연동
   getStorageItem: (key) => {
     return new Promise((resolve) => {
