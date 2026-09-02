@@ -53,7 +53,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1300,
     height: 850,
-    title: '윤선생 중국어 공부앱',
+    title: '띵동 (听懂)',
     icon: path.join(__dirname, 'icon.icns'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -67,7 +67,7 @@ function createWindow() {
   // 문서의 <title>이 창 제목을 덮어쓰지 못하게 한다 — 앱 이름은 여기서 정한다
   mainWindow.on('page-title-updated', (e) => {
     e.preventDefault();
-    mainWindow.setTitle('윤선생 중국어 공부앱');
+    mainWindow.setTitle('띵동 (听懂)');
   });
 
   if (process.env.NODE_ENV === 'development') {
@@ -145,7 +145,7 @@ function createTray() {
     },
   ]);
 
-  tray.setToolTip('윤선생 중국어 공부앱');
+  tray.setToolTip('띵동 (听懂)');
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
 }
