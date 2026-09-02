@@ -12,6 +12,30 @@ import { registerTtsBridge } from './electron/ttsBridge.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
+/**
+ * 껍데기(창 제목·트레이)의 언어.
+ *
+ * 렌더러의 언어 컨텍스트는 여기까지 닿지 않는다. 대신 기기 로케일을 따른다 —
+ * 트레이에 있는 것은 앱 이름 수준의 문구뿐이라 이 정도로 충분하고,
+ * 렌더러에서 언어를 바꾸면 트레이는 다음 실행에 반영된다. (03-architecture §8)
+ */
+const shellStrings = () => {
+  const ko = (app.getLocale() || '').toLowerCase().startsWith('ko');
+  return ko
+    ? {
+        appTitle: '띵동 (听懂)',
+        openTranslator: '📖 번역기 열기',
+        popupHint: '⌘⇧F — 선택 텍스트 팝업 번역',
+        quit: '종료',
+      }
+    : {
+        appTitle: 'Tingdong (听懂)',
+        openTranslator: '📖 Open translator',
+        popupHint: '⌘⇧F — look up the selected text',
+        quit: 'Quit',
+      };
+};
+
 // 터미널이 종료되어 표준 출력 스트림이 닫힌 상태(EPIPE)에서 console 출력 시 발생하는 크래시 방지
 process.on('uncaughtException', (err) => {
   if (err.code === 'EPIPE') return;
@@ -53,7 +77,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1300,
     height: 850,
-    title: '띵동 (听懂)',
+    title: shellStrings().appTitle,
     icon: path.join(__dirname, 'icon.icns'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -67,7 +91,7 @@ function createWindow() {
   // 문서의 <title>이 창 제목을 덮어쓰지 못하게 한다 — 앱 이름은 여기서 정한다
   mainWindow.on('page-title-updated', (e) => {
     e.preventDefault();
-    mainWindow.setTitle('띵동 (听懂)');
+    mainWindow.setTitle(shellStrings().appTitle);
   });
 
   if (process.env.NODE_ENV === 'development') {
@@ -133,19 +157,19 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '📖 번역기 열기',
+      label: shellStrings().openTranslator,
       click: () => { mainWindow?.show(); mainWindow?.focus(); },
     },
     { type: 'separator' },
-    { label: '⌘⇧F — 선택 텍스트 팝업 번역', enabled: false },
+    { label: shellStrings().popupHint, enabled: false },
     { type: 'separator' },
     {
-      label: '종료',
+      label: shellStrings().quit,
       click: () => { tray = null; app.quit(); },
     },
   ]);
 
-  tray.setToolTip('띵동 (听懂)');
+  tray.setToolTip(shellStrings().appTitle);
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
 }

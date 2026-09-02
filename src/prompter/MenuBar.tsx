@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_SETTINGS, type PrompterSettings } from './lib/settings';
-import { TONE_LABELS, resolveVoice, type Gender, type Tone } from './lib/tts/voiceMap';
+import { resolveVoice, type Gender, type Tone } from './lib/tts/voiceMap';
+import { useLang } from '../lib/i18nContext';
+import type { Strings } from '../lib/i18n';
 
 type MenuProps = {
   label: string;
@@ -57,21 +59,37 @@ type Props = {
 
 const TONES: Tone[] = ['news', 'sermon', 'chat'];
 
-const PINYIN_LABELS: Record<PrompterSettings['pinyinMode'], string> = {
-  off: '끔',
-  above: '한자 위',
-  below: '한자 아래',
-};
+const pinyinLabels = (t: Strings): Record<PrompterSettings['pinyinMode'], string> => ({
+  off: t.pinyinOff,
+  above: t.pinyinAbove,
+  below: t.pinyinBelow,
+});
 
-const TONE_HINTS: Record<Tone, string> = {
-  sermon: '느리고 호흡이 길게',
-  news: '또렷하고 균일하게',
-  chat: '자연스러운 대화체',
-};
+const toneLabels = (t: Strings): Record<Tone, string> => ({
+  sermon: t.toneSermon,
+  news: t.toneNews,
+  chat: t.toneChat,
+});
+
+const toneHints = (t: Strings): Record<Tone, string> => ({
+  sermon: t.toneHintSermon,
+  news: t.toneHintNews,
+  chat: t.toneHintChat,
+});
 
 export function MenuBar({ settings, onChange, edgeAvailable, pace, onOpenChange }: Props) {
+  const { t } = useLang();
+  const PINYIN_LABELS = pinyinLabels(t);
+  const TONE_LABELS = toneLabels(t);
+  const TONE_HINTS = toneHints(t);
   const [openId, setOpenId] = useState<string | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
+
+  /** `云健 (열정적)` — 이름은 그대로, 설명만 화면 언어를 따른다 */
+  const voiceName = (preset: { voiceId: string; label: string }) => {
+    const blurb = t.voiceBlurbs[preset.voiceId];
+    return blurb ? `${preset.label} (${blurb})` : preset.label;
+  };
 
   const open = (id: string | null) => {
     setOpenId(id);
@@ -104,85 +122,85 @@ export function MenuBar({ settings, onChange, edgeAvailable, pace, onOpenChange 
 
   return (
     <div className={`pr-menubar${settings.muted ? ' is-muted' : ''}`} ref={barRef}>
-      <Menu id="sound" label="소리" value={settings.muted ? '끔' : '켬'} openId={openId} onOpen={open}>
+      <Menu id="sound" label={t.menuSound} value={settings.muted ? t.off : t.on} openId={openId} onOpen={open}>
         <Choice on={!settings.muted} onClick={() => { onChange({ muted: false }); open(null); }}>
-          <strong>켬</strong><em>문장을 읽어줍니다</em>
+          <strong>{t.on}</strong><em>{t.soundOnHint}</em>
         </Choice>
         <Choice on={settings.muted} onClick={() => { onChange({ muted: true }); open(null); }}>
-          <strong>끔 — 프롬프터</strong>
-          <em>소리 없이 글만. 자동 진행은 속도에 맞춰 계속 넘어갑니다</em>
+          <strong>{t.soundOffTitle}</strong>
+          <em>{t.soundOffHint}</em>
         </Choice>
       </Menu>
 
-      <Menu id="voice" label="목소리" value={settings.gender === 'female' ? '여성' : '남성'}
+      <Menu id="voice" label={t.menuVoice} value={settings.gender === 'female' ? t.voiceFemale : t.voiceMale}
             openId={openId} onOpen={open}>
         {(['female', 'male'] as Gender[]).map((g) => (
           <Choice key={g} on={settings.gender === g} onClick={() => { onChange({ gender: g }); open(null); }}>
-            <strong>{g === 'female' ? '여성' : '남성'}</strong>
-            <em>{resolveVoice(g, settings.tone).label}</em>
+            <strong>{g === 'female' ? t.voiceFemale : t.voiceMale}</strong>
+            <em>{voiceName(resolveVoice(g, settings.tone))}</em>
           </Choice>
         ))}
       </Menu>
 
-      <Menu id="tone" label="톤" value={TONE_LABELS[settings.tone]} openId={openId} onOpen={open}>
-        {TONES.map((t) => (
-          <Choice key={t} on={settings.tone === t} onClick={() => { onChange({ tone: t }); open(null); }}>
-            <strong>{TONE_LABELS[t]}</strong>
-            <em>{resolveVoice(settings.gender, t).label} · {TONE_HINTS[t]}</em>
+      <Menu id="tone" label={t.menuTone} value={TONE_LABELS[settings.tone]} openId={openId} onOpen={open}>
+        {TONES.map((tone) => (
+          <Choice key={tone} on={settings.tone === tone} onClick={() => { onChange({ tone }); open(null); }}>
+            <strong>{TONE_LABELS[tone]}</strong>
+            <em>{voiceName(resolveVoice(settings.gender, tone))} · {TONE_HINTS[tone]}</em>
           </Choice>
         ))}
       </Menu>
 
-      <Menu id="font" label="서체" value={settings.fontStyle === 'sans' ? '고딕' : '명조'}
+      <Menu id="font" label={t.menuFont} value={settings.fontStyle === 'sans' ? t.fontSans : t.fontSerif}
             openId={openId} onOpen={open}>
         <Choice on={settings.fontStyle === 'sans'} onClick={() => { onChange({ fontStyle: 'sans' }); open(null); }}>
-          <strong lang="zh-CN" style={{ fontFamily: "'PingFang SC', sans-serif" }}>고딕 黑体</strong>
-          <em>PingFang SC · 화면용, 획이 선명</em>
+          <strong lang="zh-CN" style={{ fontFamily: "'PingFang SC', sans-serif" }}>{t.fontSans} 黑体</strong>
+          <em>{t.fontSansHint}</em>
         </Choice>
         <Choice on={settings.fontStyle === 'serif'} onClick={() => { onChange({ fontStyle: 'serif' }); open(null); }}>
-          <strong lang="zh-CN" style={{ fontFamily: "'Songti SC', serif" }}>명조 宋体</strong>
-          <em>Songti SC · 인쇄물 느낌</em>
+          <strong lang="zh-CN" style={{ fontFamily: "'Songti SC', serif" }}>{t.fontSerif} 宋体</strong>
+          <em>{t.fontSerifHint}</em>
         </Choice>
       </Menu>
 
-      <Menu id="speed" label="속도" value={`${settings.rate.toFixed(2)}x`} openId={openId} onOpen={open} wide>
+      <Menu id="speed" label={t.menuSpeed} value={`${settings.rate.toFixed(2)}x`} openId={openId} onOpen={open} wide>
         <div className="pr-pop-row">
-          <label>배속</label>
+          <label>{t.speedRate}</label>
           <input type="range" min={0.5} max={1.5} step={0.05} value={settings.rate}
                  onChange={(e) => onChange({ rate: Number(e.target.value) })} />
           <span className="pr-pop-value">{settings.rate.toFixed(2)}x</span>
         </div>
         <div className="pr-pop-row">
-          <label>음높이</label>
+          <label>{t.speedPitch}</label>
           <input type="range" min={-20} max={20} step={2} value={settings.pitchPct}
                  onChange={(e) => onChange({ pitchPct: Number(e.target.value) })} />
           <span className="pr-pop-value">{settings.pitchPct > 0 ? '+' : ''}{settings.pitchPct}%</span>
         </div>
         <p className="pr-pop-note">
           {settings.muted ? (
-            <>넘어가는 속도 <strong>{Math.round(200 * settings.rate)}자/분</strong> (어림)</>
+            <>{t.speedNoteMuted(Math.round(200 * settings.rate))}</>
           ) : (
-            <>실제 읽는 속도 <strong>{pace !== null ? `${pace}자/분` : '측정 중…'}</strong></>
+            <>{t.speedNoteLive} <strong>{pace !== null ? t.paceUnit(pace) : t.paceMeasuring}</strong></>
           )}
-          <br />단축키 <kbd>[</kbd> 느리게 · <kbd>]</kbd> 빠르게
+          <br />{t.shortcut} <kbd>[</kbd> {t.speedKeysSlow} <kbd>]</kbd> {t.speedKeysFast}
         </p>
       </Menu>
 
-      <Menu id="pinyin" label="병음" value={PINYIN_LABELS[settings.pinyinMode]} openId={openId} onOpen={open}>
+      <Menu id="pinyin" label={t.menuPinyin} value={PINYIN_LABELS[settings.pinyinMode]} openId={openId} onOpen={open}>
         <Choice on={settings.pinyinMode === 'off'} onClick={() => { onChange({ pinyinMode: 'off' }); open(null); }}>
-          <strong>끔</strong><em>한자만 보기</em>
+          <strong>{t.pinyinOff}</strong><em>{t.pinyinOffHint}</em>
         </Choice>
         <Choice on={settings.pinyinMode === 'above'} onClick={() => { onChange({ pinyinMode: 'above' }); open(null); }}>
-          <strong>한자 위</strong><em>글자마다 성조를 얹어 표시</em>
+          <strong>{t.pinyinAbove}</strong><em>{t.pinyinAboveHint}</em>
         </Choice>
         <Choice on={settings.pinyinMode === 'below'} onClick={() => { onChange({ pinyinMode: 'below' }); open(null); }}>
-          <strong>한자 아래</strong><em>글자마다 성조를 밑에 표시</em>
+          <strong>{t.pinyinBelow}</strong><em>{t.pinyinBelowHint}</em>
         </Choice>
       </Menu>
 
-      <Menu id="text" label="글자" value={`${settings.fontSize}px`} openId={openId} onOpen={open} wide>
+      <Menu id="text" label={t.menuText} value={`${settings.fontSize}px`} openId={openId} onOpen={open} wide>
         <div className="pr-pop-row">
-          <label>크기</label>
+          <label>{t.textSize}</label>
           <input type="range" min={24} max={160} step={4} value={settings.fontSize}
                  onChange={(e) => onChange({ fontSize: Number(e.target.value) })} />
           <span className="pr-pop-value">{settings.fontSize}px</span>
@@ -199,36 +217,36 @@ export function MenuBar({ settings, onChange, edgeAvailable, pace, onOpenChange 
           ))}
         </div>
         <div className="pr-pop-row">
-          <label>다음 문장</label>
+          <label>{t.textNextLines}</label>
           <input type="range" min={0} max={6} step={1} value={settings.contextAfter}
                  onChange={(e) => onChange({ contextAfter: Number(e.target.value) })} />
-          <span className="pr-pop-value">{settings.contextAfter}개</span>
+          <span className="pr-pop-value">{t.textCountUnit(settings.contextAfter)}</span>
         </div>
         <div className="pr-pop-row">
-          <label>이전 문장</label>
+          <label>{t.textPrevLines}</label>
           <input type="range" min={0} max={4} step={1} value={settings.contextBefore}
                  onChange={(e) => onChange({ contextBefore: Number(e.target.value) })} />
-          <span className="pr-pop-value">{settings.contextBefore}개</span>
+          <span className="pr-pop-value">{t.textCountUnit(settings.contextBefore)}</span>
         </div>
         <p className="pr-pop-note">
-          단축키 <kbd>+</kbd> 크게 · <kbd>-</kbd> 작게
+          {t.shortcut} <kbd>+</kbd> {t.textKeysBig} <kbd>-</kbd> {t.textKeysSmall}
         </p>
       </Menu>
 
-      <Menu id="more" label="더보기" value="진행·소스" openId={openId} onOpen={open} wide>
+      <Menu id="more" label={t.menuMore} value={t.menuMoreValue} openId={openId} onOpen={open} wide>
         <div className="pr-pop-row">
-          <label>진행 간격</label>
+          <label>{t.moreGap}</label>
           <input type="range" min={0} max={4000} step={100} value={settings.gapMs}
                  onChange={(e) => onChange({ gapMs: Number(e.target.value) })} />
-          <span className="pr-pop-value">{(settings.gapMs / 1000).toFixed(1)}초</span>
+          <span className="pr-pop-value">{t.moreGapUnit((settings.gapMs / 1000).toFixed(1))}</span>
         </div>
 
         <div className="pr-pop-modes">
-          <span className="pr-pop-modes-label">무엇을 읽을지</span>
+          <span className="pr-pop-modes-label">{t.moreReadWhat}</span>
           {([
-            ['chinese', '중국어만', '한국어·영어·병음을 모두 건너뜀'],
-            ['chinese-english', '중국어 + 영어', '괄호 안은 버리고, 문장에 섞인 영어는 읽음'],
-            ['raw', '원고 그대로', '거르지 않음'],
+            ['chinese', t.readModeChinese, t.readModeChineseHint],
+            ['chinese-english', t.readModeChineseEnglish, t.readModeChineseEnglishHint],
+            ['raw', t.readModeRaw, t.readModeRawHint],
           ] as const).map(([mode, name, hint]) => (
             <Choice key={mode} on={settings.readMode === mode} onClick={() => onChange({ readMode: mode })}>
               <strong>{name}</strong><em>{hint}</em>
@@ -240,18 +258,18 @@ export function MenuBar({ settings, onChange, edgeAvailable, pace, onOpenChange 
           <label className="pr-check">
             <input type="checkbox" checked={settings.autoAdvance}
                    onChange={(e) => onChange({ autoAdvance: e.target.checked })} />
-            자동 진행
+            {t.moreAutoAdvance}
           </label>
 
           <label className="pr-check">
             <input type="checkbox" checked={settings.splitLongSentences}
                    onChange={(e) => onChange({ splitLongSentences: e.target.checked })} />
-            긴 문장 쪼개기 ({settings.maxChars}자)
+            {t.moreSplitLong(settings.maxChars)}
           </label>
-          <label className="pr-check" title={edgeAvailable ? '' : 'Electron 앱에서만 온라인 음성을 쓸 수 있습니다'}>
+          <label className="pr-check" title={edgeAvailable ? '' : t.moreOfflineHint}>
             <input type="checkbox" checked={settings.engine === 'local'} disabled={!edgeAvailable}
                    onChange={(e) => onChange({ engine: e.target.checked ? 'local' : 'edge' })} />
-            오프라인 전용 (기기 음성)
+            {t.moreOffline}
           </label>
         </div>
 
@@ -259,11 +277,11 @@ export function MenuBar({ settings, onChange, edgeAvailable, pace, onOpenChange 
           className="pr-pop-reset"
           onClick={() => { onChange(DEFAULT_SETTINGS); open(null); }}
         >
-          기본값으로 되돌리기
+          {t.moreReset}
         </button>
       </Menu>
 
-      <span className="pr-menubar-voice">{settings.muted ? '소리 꺼짐 — 프롬프터 모드' : preset.label}</span>
+      <span className="pr-menubar-voice">{settings.muted ? t.menubarMuted : voiceName(preset)}</span>
     </div>
   );
 }

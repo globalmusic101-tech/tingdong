@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "app:dev": "concurrently \"vite\" \"sleep 2 && ELECTRON_ENABLE_LOGGING=true NODE_ENV=development electron .\"",
     "app:build": "npm run build && electron-packager . Tingdong --platform=darwin --arch=arm64 --overwrite --icon=icon.icns --out=release --ignore=\"^/(src|release|\\\\.appbuild|\\\\.git)($|/)\" --ignore=\"^/(tsconfig.*|eslint\\\\.config\\\\.mjs|vite\\\\.config\\\\.ts|probe.*|.*\\\\.tmp\\\\..*)$\" --ignore=\"^/popup\\\\.html$\"",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:i18n": "python3 scripts/check-korean-residue.py"
   },
   "dependencies": {
     "jszip": "^3.10.1",

@@ -40,3 +40,34 @@
   display: flex;
   flex-direction: column;
 }
+
+/* 언어 선택 — 탭 줄 오른쪽 끝 (F11-1) */
+.shell-lang {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  align-self: center;
+  padding-bottom: 8px;
+}
+
+.shell-lang button {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 0;
+  margin: 0;
+}
+
+.shell-lang button:first-child { border-radius: 6px 0 0 6px; }
+.shell-lang button:last-child { border-radius: 0 6px 6px 0; border-left-width: 0; }
+.shell-lang button:hover { background: rgba(0, 0, 0, 0.04); }
+
+.shell-lang button.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}

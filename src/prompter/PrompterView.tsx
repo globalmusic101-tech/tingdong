@@ -5,6 +5,7 @@ import type { PrompterSettings } from './lib/settings';
 import type { PlayStatus, Range } from './hooks/usePrompter';
 import { chunkPinyin, toWordChunks, type WordChunk } from './lib/wordChunks';
 import { lookupCached, lookupSentenceCached, peekSentence, peekWord, switchToFreeDictionary } from './lib/wordLookup';
+import { useLang } from '../lib/i18nContext';
 import type { LookupOutcome } from '../lib/translate';
 
 type Props = {
@@ -38,6 +39,7 @@ type WordCard = {
 };
 
 export function PrompterView({ sentences, index, status, settings, range, pendingStart, onSelect }: Props) {
+  const { lang, t } = useLang();
   const viewportRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [offset, setOffset] = useState(0);
@@ -99,22 +101,23 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
       return;
     }
 
-    const cached = peekSentence(zh);
+    const cached = peekSentence(zh, lang);
     if (cached !== undefined) {
       setContext({ zh, ko: cached });
     } else {
       setContext({ zh, ko: null });
-      lookupSentenceCached(zh).then(
+      lookupSentenceCached(zh, lang).then(
         (ko) => setContext((now) => (now?.zh === zh ? { zh, ko } : now)),
         () => setContext((now) => (now?.zh === zh ? { zh, ko: null, failed: true } : now)),
       );
     }
 
     const nextZh = sentences[index + 1]?.text;
-    if (nextZh && peekSentence(nextZh) === undefined) {
-      lookupSentenceCached(nextZh).catch(() => { /* 미리 받는 것뿐이라 실패해도 그만 */ });
+    if (nextZh && peekSentence(nextZh, lang) === undefined) {
+      lookupSentenceCached(nextZh, lang).catch(() => { /* 미리 받는 것뿐이라 실패해도 그만 */ });
     }
-  }, [sentences, index]);
+    // 언어가 바뀌면 문장 뜻도 새 언어로 다시 받는다
+  }, [sentences, index, lang]);
 
   const onWordEnter = useCallback((chunk: WordChunk) => {
     if (!chunk.isWord) return;
@@ -124,7 +127,7 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
     const reading = chunkPinyin(chunk) || pinyin(chunk.text, { toneType: 'symbol' });
 
     // 이미 찾아둔 단어는 기다릴 이유가 없다
-    const cached = peekWord(chunk.text);
+    const cached = peekWord(chunk.text, lang);
     if (cached) {
       lookupId.current += 1;
       setCard({ word: chunk.text, pinyin: reading, state: 'done', outcome: cached });
@@ -136,7 +139,7 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
       const id = ++lookupId.current;
       setCard({ word: chunk.text, pinyin: reading, state: 'loading' });
 
-      lookupCached(chunk.text).then(
+      lookupCached(chunk.text, lang).then(
         (outcome) => {
           if (id === lookupId.current) setCard({ word: chunk.text, pinyin: reading, state: 'done', outcome });
         },
@@ -151,10 +154,14 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
         },
       );
     }, HOVER_DELAY_MS);
-  }, [cancelPendingLookup]);
+    // lang이 빠지면 이 콜백은 첫 렌더의 언어를 붙잡은 채로 남는다 —
+    // 언어를 바꿔도 옛 언어 캐시에서 뜻을 꺼내온다 (F11-2e)
+  }, [cancelPendingLookup, lang]);
 
   // 문장이 바뀌면 앞 문장에서 짚어둔 단어는 치운다
-  useEffect(() => { setCard(null); }, [index]);
+  // 언어를 바꾸면 띄워둔 단어 카드도 치운다 — 안 치우면 문장 뜻만 새 언어로 바뀌고
+  // 카드에는 옛 언어 뜻이 그대로 남아, 한 화면에 두 언어가 같이 보인다 (F11-2e)
+  useEffect(() => { setCard(null); }, [index, lang]);
   useEffect(() => cancelPendingLookup, [cancelPendingLookup]);
 
   // 현재 문장이 항상 같은 높이에 오도록 스택 전체를 밀어 올린다
@@ -348,10 +355,10 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
                 )}
                 <span className="pr-word-card-body">
                   {card.state === 'loading'
-                    ? '찾는 중…'
+                    ? t.cardSearching
                     : card.state === 'error'
-                      ? `뜻을 가져오지 못했습니다 — ${card.error}`
-                      : card.outcome?.result.translation || '뜻을 찾지 못했습니다'}
+                      ? t.cardLookupFailed(String(card.error))
+                      : card.outcome?.result.translation || t.cardNotFound}
                 </span>
               </div>
 
@@ -359,13 +366,13 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
                   말하지 않으면 품사·예문이 왜 안 나오는지 알 길이 없다. */}
               {card.state === 'done' && card.outcome?.usedFallback && (
                 <div className="pr-word-card-warn">
-                  ⚠️ {card.outcome.engine} 실패 — 무료 뜻만 (품사·예문 없음)
+                  ⚠️ {t.cardEngineFallback(card.outcome.engine)}
                   <button
                     className="pr-word-card-switch"
                     onClick={() => { switchToFreeDictionary(); setCard(null); }}
-                    title="사전 엔진을 무료로 바꿉니다. 설정에서 언제든 되돌릴 수 있습니다."
+                    title={t.cardSwitchToFree}
                   >
-                    무료 사전으로 바꾸기
+                    {t.cardSwitchBtn}
                   </button>
                   {card.outcome.fallbackReason && (
                     <div className="pr-word-card-why">{card.outcome.fallbackReason}</div>
@@ -375,11 +382,11 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
 
               {card.state === 'done'
                 && card.outcome?.result.exampleChinese
-                && card.outcome?.result.exampleKorean && (
+                && card.outcome?.result.exampleTranslation && (
                 <div className="pr-word-card-eg">
-                  <span className="pr-word-card-eg-label">예문</span>
+                  <span className="pr-word-card-eg-label">{t.cardExample}</span>
                   <span lang="zh-CN">{card.outcome.result.exampleChinese}</span>
-                  <span className="pr-word-card-eg-ko">{card.outcome.result.exampleKorean}</span>
+                  <span className="pr-word-card-eg-ko">{card.outcome.result.exampleTranslation}</span>
                 </div>
               )}
             </div>
@@ -390,15 +397,15 @@ export function PrompterView({ sentences, index, status, settings, range, pendin
             {context.ko
               ? context.ko
               : context.failed
-                ? <span className="pr-word-card-dim">이 문장의 뜻을 가져오지 못했습니다</span>
-                : <span className="pr-word-card-dim">번역 중…</span>}
+                ? <span className="pr-word-card-dim">{t.cardSentenceFailed}</span>
+                : <span className="pr-word-card-dim">{t.cardSentenceLoading}</span>}
           </div>
         </div>
       )}
 
       {browsing && (
         <button className="pr-back-to-current" onClick={() => setBrowseDelta(0)}>
-          현재 문장으로 ↩
+          {t.backToCurrent}
         </button>
       )}
     </div>

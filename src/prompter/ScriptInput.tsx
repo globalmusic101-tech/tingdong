@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { readDocx } from './lib/readDocx';
+import { useLang } from '../lib/i18nContext';
 import type { ReadMode } from './lib/extractChinese';
 
 const TEXT_EXTENSIONS = ['.txt', '.md', '.markdown', '.text'];
@@ -38,6 +39,7 @@ export function ScriptInput({
   text, sentenceCount, skippedLines, readMode,
   onChangeReadMode, onChange, onStart, focusRange,
 }: Props) {
+  const { t } = useLang();
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,25 +73,23 @@ export function ScriptInput({
       try {
         onChange(await readDocx(file));
       } catch {
-        setError('워드 문서를 읽지 못했습니다. 손상되었거나 .doc(구버전) 형식일 수 있습니다.');
+        setError(t.errDocx);
       }
       return;
     }
 
     if (!looksLikeText(file)) {
-      const kind = file.name.split('.').pop()?.toUpperCase() ?? '이';
-      setError(
-        `${kind} 파일은 읽지 못합니다. 텍스트 파일(.txt·.md)이나 워드 문서(.docx)를 넣어주세요.`,
-      );
+      const kind = file.name.split('.').pop()?.toUpperCase() ?? t.errUnknownKind;
+      setError(t.errFileKind(kind));
       return;
     }
 
     const reader = new FileReader();
-    reader.onerror = () => setError('파일을 읽지 못했습니다.');
+    reader.onerror = () => setError(t.errFileRead);
     reader.onload = () => {
       const content = String(reader.result ?? '');
       if (looksLikeBinary(content)) {
-        setError('텍스트로 읽히지 않는 파일입니다. UTF-8 텍스트 파일인지 확인해주세요.');
+        setError(t.errNotText);
         return;
       }
       onChange(content);
@@ -100,12 +100,8 @@ export function ScriptInput({
   return (
     <div className="pr-input">
       <div className="pr-input-head">
-        <h2>중국어 원고 붙여넣기</h2>
-        <p>
-          문장 부호(。！？)와 줄바꿈을 기준으로 문장을 나눕니다. 워드 문서(.docx)도 끌어다 놓을 수 있고,
-          한국어·병음이 섞여 있으면 <strong>읽지 않고 건너뜁니다.</strong>
-          원고를 눌러 커서를 두면 <strong>그 자리부터</strong> 읽습니다.
-        </p>
+        <h2>{t.scriptHeading}</h2>
+        <p>{t.scriptIntro}</p>
       </div>
 
       <textarea
@@ -133,10 +129,10 @@ export function ScriptInput({
 
       <div className="pr-input-foot">
         <span className="pr-count">
-          {text.length.toLocaleString()}자 · <strong>{sentenceCount}문장</strong>
+          {t.scriptCount(text.length.toLocaleString(), sentenceCount)}
           {readMode !== 'raw' && skippedLines > 0 && (
-            <span className="pr-skipped" title="중국어가 없어 읽지 않는 줄입니다">
-              · 건너뛴 줄 {skippedLines}
+            <span className="pr-skipped" title={t.scriptSkippedHint}>
+              {' '}{t.scriptSkipped(skippedLines)}
             </span>
           )}
           <select
@@ -144,9 +140,9 @@ export function ScriptInput({
             value={readMode}
             onChange={(e) => onChangeReadMode(e.target.value as ReadMode)}
           >
-            <option value="chinese">중국어만 읽기</option>
-            <option value="chinese-english">중국어 + 영어 (괄호 제외)</option>
-            <option value="raw">원고 그대로</option>
+            <option value="chinese">{t.readModeChinese}</option>
+            <option value="chinese-english">{t.readModeChineseEnglish}</option>
+            <option value="raw">{t.readModeRaw}</option>
           </select>
         </span>
         <div className="pr-input-actions">
@@ -162,14 +158,14 @@ export function ScriptInput({
             }}
           />
           <button className="pr-btn" onClick={() => inputRef.current?.click()}>
-            파일 열기
+            {t.openFile}
           </button>
           <button
             className="pr-btn pr-btn-primary"
             onClick={() => onStart(caretChosen.current ? (areaRef.current?.selectionStart ?? null) : null)}
             disabled={sentenceCount === 0}
           >
-            시작 →
+            {t.start}
           </button>
         </div>
       </div>

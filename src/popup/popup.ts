@@ -5,6 +5,13 @@
  * 따로 갖고 있어서, 번역기 탭만 고치면 팝업은 옛 방식 그대로 남았다.
  */
 import { loadEngineConfig, lookupWord, type EngineConfig } from '../lib/translate';
+import { loadUiLang, stringsFor } from '../lib/i18n';
+
+/**
+ * 팝업은 React 트리 밖이라 컨텍스트가 닿지 않는다 — 언어를 직접 읽는다.
+ * 창이 뜰 때 한 번 고르고, 그 창이 사는 동안은 바뀌지 않는다.
+ */
+let t = stringsFor(loadUiLang());
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -83,11 +90,11 @@ window.electronAPI?.onTranslateText(async (data) => {
   pinyinText.textContent = data.pinyin;
 
   if (!isAccessibilityTrusted) {
-    warningText.innerHTML = '⚠️ 클립보드 자동 복사에 실패했습니다. macOS의 \'시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용(Accessibility)\'에서 이 앱(또는 실행 중인 터미널)의 권한이 켜져 있는지 확인해 주세요. (미허용 시 직접 <b>Cmd+C</b> 복사 후 단축키를 눌러야 작동합니다.)';
+    warningText.innerHTML = t.popupWarnAccessibility;
     if (grantBtn) grantBtn.style.display = 'inline-block';
     copyWarning.style.display = 'block';
   } else if (data.copyFailed) {
-    warningText.innerHTML = '⚠️ 선택된 텍스트가 없습니다. 마우스 드래그로 텍스트를 선택한 후 단축키를 눌러주세요.';
+    warningText.innerHTML = t.popupWarnNoSelection;
     if (grantBtn) grantBtn.style.display = 'none';
     copyWarning.style.display = 'block';
   } else {
@@ -101,37 +108,52 @@ window.electronAPI?.onTranslateText(async (data) => {
 
   // 번역기 탭이 넘겨준 설정을 우선 쓴다. 창이 따로라 localStorage는 비어 있을 수 있다.
   const cfg: EngineConfig = data.engine ?? loadEngineConfig();
+  // 본창이 언어를 함께 보냈으면 그쪽이 옳다 — 팝업의 문구도 그 언어로 맞춘다
+  t = stringsFor(cfg.lang);
+  applyStaticLabels();
   await runLookup(text, cfg);
 });
 
+/** 문서에 박혀 있는 라벨들을 지금 언어로 갈아끼운다 */
+function applyStaticLabels() {
+  speakBtn.title = t.popupSpeak;
+  copyBtn.title = t.popupCopy;
+  pinBtn.title = t.popupPin;
+  closeBtn.title = t.popupClose;
+  if (grantBtn) grantBtn.textContent = t.popupGrantBtn;
+  $('dismiss-hint').textContent = t.popupDismissHint;
+}
+
+applyStaticLabels();
+
 async function runLookup(text: string, cfg: EngineConfig) {
-  translationText.textContent = '번역 엔진 호출 중...';
+  translationText.textContent = t.popupCallingEngine;
   posTag.style.display = 'none';
   usageBox.style.display = 'none';
 
   try {
     const { result, engine, usedFallback, fallbackReason } = await lookupWord(text, cfg);
 
-    engineBadge.textContent = usedFallback ? `⚠️ ${engine} 실패 → Google 무료` : `🟢 ${engine}`;
+    engineBadge.textContent = usedFallback ? t.popupEngineFallback(engine) : `🟢 ${engine}`;
     engineBadge.title = usedFallback && fallbackReason ? fallbackReason : '';
 
     currentTranslation = result.translation || '';
-    translationText.textContent = result.translation || '번역 정보 없음';
+    translationText.textContent = result.translation || t.popupNoTranslation;
 
     if (result.partOfSpeech) {
       posTag.textContent = result.partOfSpeech;
       posTag.style.display = 'inline-block';
     }
-    if (result.exampleChinese && result.exampleKorean) {
+    if (result.exampleChinese && result.exampleTranslation) {
       exampleZh.textContent = result.exampleChinese;
-      exampleKo.textContent = result.exampleKorean;
+      exampleKo.textContent = result.exampleTranslation;
       usageBox.style.display = 'flex';
     }
   } catch (err) {
     // 실패를 '번역 정보 없음'처럼 흘리지 않는다 — 왜 안 됐는지 보여준다
     console.error('팝업 번역 실패:', err);
-    engineBadge.textContent = '❌ 번역 실패';
-    translationText.textContent = `번역을 가져오지 못했습니다 — ${(err as Error)?.message ?? err}`;
+    engineBadge.textContent = t.popupFailedBadge;
+    translationText.textContent = t.popupFetchFailed(String((err as Error)?.message ?? err));
   }
   updateHeight();
 }

@@ -224,25 +224,25 @@
         <span class="pinyin" id="pinyin-text">...</span>
       </div>
       <div class="actions">
-        <button class="icon-btn" id="speak-btn" title="발음 듣기">🔊</button>
-        <button class="icon-btn" id="copy-btn" title="복사">📋</button>
-        <button class="icon-btn" id="pin-btn" title="핀 고정">📌</button>
-        <button class="icon-btn" id="close-btn" title="닫기 (ESC)">✕</button>
+        <button class="icon-btn" id="speak-btn" title="Play pronunciation">🔊</button>
+        <button class="icon-btn" id="copy-btn" title="Copy">📋</button>
+        <button class="icon-btn" id="pin-btn" title="Keep on top">📌</button>
+        <button class="icon-btn" id="close-btn" title="Close (ESC)">✕</button>
       </div>
     </div>
 
     <!-- 클립보드 복사 에러 경고 배너 -->
     <div id="copy-warning" style="display: none; font-size: 0.72rem; color: #f28b82; padding: 6px 8px; background: rgba(242, 139, 130, 0.08); border-radius: 6px; margin: 6px 0; -webkit-app-region: no-drag; border: 1px solid rgba(242, 139, 130, 0.15); line-height: 1.35;">
-      <span id="warning-text">⚠️ 클립보드 자동 복사에 실패했습니다. macOS의 '시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용(Accessibility)'에서 이 앱(또는 실행 중인 터미널)의 권한이 켜져 있는지 확인해 주세요. (미허용 시 직접 <b>Cmd+C</b> 복사 후 단축키를 눌러야 작동합니다.)</span>
-      <button id="grant-btn" style="display: none; margin-top: 4px; padding: 2px 6px; background: #f28b82; color: #202124; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.7rem;">권한 설정 열기</button>
+      <span id="warning-text"></span>
+      <button id="grant-btn" style="display: none; margin-top: 4px; padding: 2px 6px; background: #f28b82; color: #202124; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.7rem;">Open permission settings</button>
     </div>
 
     <div id="full-content" style="display: none;">
       <div class="divider"></div>
       <div class="content-body">
         <div class="translation-row">
-          <span class="translation" id="translation-text">번역 로딩 중...</span>
-          <span class="pos-tag" id="pos-tag" style="display: none;">품사</span>
+          <span class="translation" id="translation-text">Loading translation…</span>
+          <span class="pos-tag" id="pos-tag" style="display: none;">part of speech</span>
         </div>
         <div class="usage-box" id="usage-box" style="display: none;">
           <span class="usage-title">💡 Usage / Example</span>
@@ -252,8 +252,8 @@
       </div>
 
       <div class="footer">
-        <span id="engine-badge" class="badge">Google 번역</span>
-        <span>Esc를 누르거나 외부를 클릭하면 닫힙니다.</span>
+        <span id="engine-badge" class="badge">Google Translate</span>
+        <span id="dismiss-hint">Press Esc or click outside to close.</span>
       </div>
     </div>
   </div>

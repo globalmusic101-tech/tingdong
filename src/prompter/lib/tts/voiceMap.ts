@@ -21,25 +21,19 @@ export type VoicePreset = {
 export const VOICE_MAP: Record<Gender, Record<Tone, VoicePreset>> = {
   male: {
     // Sports / Passion — 열정적인 톤을 느리게 눌러 설교 호흡에 가깝게
-    sermon: { voiceId: 'zh-CN-YunjianNeural', label: '云健 (열정적)', ratePct: -14, pitchPct: -6 },
+    sermon: { voiceId: 'zh-CN-YunjianNeural', label: '云健', ratePct: -14, pitchPct: -6 },
     // News / Professional·Reliable — 또렷하고 균일
-    news: { voiceId: 'zh-CN-YunyangNeural', label: '云扬 (뉴스·신뢰감)', ratePct: 0, pitchPct: 0 },
+    news: { voiceId: 'zh-CN-YunyangNeural', label: '云扬', ratePct: 0, pitchPct: 0 },
     // Novel / Lively·Sunshine — 가장 대화체
-    chat: { voiceId: 'zh-CN-YunxiNeural', label: '云希 (밝고 자연스러움)', ratePct: 0, pitchPct: 0 },
+    chat: { voiceId: 'zh-CN-YunxiNeural', label: '云希', ratePct: 0, pitchPct: 0 },
   },
   female: {
     // News,Novel / Warm — 여성 음성 중 유일하게 낭독에 쓸 만하다
-    sermon: { voiceId: 'zh-CN-XiaoxiaoNeural', label: '晓晓 (따뜻함)', ratePct: -14, pitchPct: -6 },
-    news: { voiceId: 'zh-CN-XiaoxiaoNeural', label: '晓晓 (따뜻함)', ratePct: 0, pitchPct: 0 },
+    sermon: { voiceId: 'zh-CN-XiaoxiaoNeural', label: '晓晓', ratePct: -14, pitchPct: -6 },
+    news: { voiceId: 'zh-CN-XiaoxiaoNeural', label: '晓晓', ratePct: 0, pitchPct: 0 },
     // Cartoon / Lively — 가볍고 빠른 대화체
-    chat: { voiceId: 'zh-CN-XiaoyiNeural', label: '晓伊 (발랄함)', ratePct: 0, pitchPct: 0 },
+    chat: { voiceId: 'zh-CN-XiaoyiNeural', label: '晓伊', ratePct: 0, pitchPct: 0 },
   },
-};
-
-export const TONE_LABELS: Record<Tone, string> = {
-  sermon: '설교',
-  news: '뉴스',
-  chat: '대화',
 };
 
 export function resolveVoice(gender: Gender, tone: Tone): VoicePreset {

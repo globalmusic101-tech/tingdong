@@ -21,34 +21,46 @@
 
 ### 파일 구조
 
-`App.tsx`(713줄, 번역기)는 건드리지 않는다. 최상단에 모드 스위치만 둔다.
+**v3에서 실제 코드에 맞춰 고쳤다.** v2의 트리는 만들기 전에 그린 것이라, 결국 만들지 않은
+파일(`SentenceLine.tsx`·`SettingsPanel.tsx`·`pinyinLine.ts`)이 남아 있고 실제로 만든
+파일(`MenuBar.tsx`·`wordLookup.ts`·`readDocx.ts`…)이 빠져 있었다.
 
 ```
 src/
   main.tsx
-  AppShell.tsx           ← 신규. 'translate' | 'prompter'
-  App.tsx                ← 기존 번역기. 그대로
+  AppShell.tsx           'translate' | 'prompter' + 언어 토글 (F11-1)
+  App.tsx                번역기 (S1)
+  lib/
+    translate.ts         번역·사전 엔진 한 벌 (번역기·팝업 공용)
+    i18n.ts              ← v3 신규. 문자열표·UiLang (React 없음)
+    i18nContext.tsx      ← v3 신규. LangProvider·useLang()
+    matchHighlight.ts    ← v3 신규. 교차 하이라이트 매칭 (순수 · 테스트 대상)
+  popup/
+    popup.ts             ⌘⇧F 팝업 (S3, React 미사용 별도 엔트리)
   prompter/
-    PrompterApp.tsx      모드 루트
-    ScriptInput.tsx      F1
-    PrompterView.tsx     F3
-    SentenceLine.tsx     F3/F8
-    SettingsPanel.tsx    F6/F7/F8/F9
+    PrompterApp.tsx      모드 루트 (S2)
+    ScriptInput.tsx      F1 (S2a)
+    PrompterView.tsx     F3/F8 + 단어 카드
+    MenuBar.tsx          F6/F7/F8/F9 (v2의 SettingsPanel 자리)
     lib/
       splitSentences.ts  F2  (순수 함수 · 테스트 대상)
-      pinyinLine.ts      F8
+      extractChinese.ts  readMode 필터
+      readDocx.ts        .docx 읽기
+      wordChunks.ts      단어 분절
+      wordLookup.ts      단어 뜻 조회 + 세션 캐시
       tts/
         types.ts         TtsEngine 인터페이스
         edgeTts.ts       IPC 클라이언트
         webSpeech.ts     폴백
         voiceMap.ts      F6 매핑표
         audioCache.ts    캐시 + 프리페치
+        pace.ts          실제 낭독 속도 (테스트 대상)
     hooks/
       usePrompter.ts     커서·재생 상태 머신
       useHotkeys.ts      F5
-electron/
-  ttsBridge.cjs          ← 신규. main에서 Edge TTS 호출
-preload.cjs              ← window.tts 노출
+main.js                  Electron 메인 — 창·트레이·TTS 브리지
+preload.cjs              window.tts 노출
+popup.html               S3 문서
 ```
 
 **Electron IPC가 필요한 이유**: Edge TTS는 WebSocket으로 MS 엔드포인트에 붙는다. 렌더러에서
@@ -70,7 +82,19 @@ renderer --> Blob URL --> <audio>
 > **다시 파생 데이터로 돌아왔다.** 저장하는 건 원고 문자열뿐이고 문장 배열은 매번 재계산한다.
 > 덕분에 문장 id·origin 추적, undo 스택, IndexedDB 스키마가 전부 사라졌다.
 
-### Sentence (파생 · 저장 안 함)
+### 번역기 모델 (S1 · 파생 · 저장 안 함) — v3에서 문서화
+
+v2까지 이 문서는 프롬프터만 다뤄 번역기 쪽 모델이 통째로 빠져 있었다. 02-screens가
+참조하는 이름들이라 여기 적는다. 전부 화면 상태이고 저장되지 않는다.
+
+| 타입 | 필드 | 비고 |
+|---|---|---|
+| `WordData` | `id` `chinese` `pinyin` `translationLiteral` `isWord` | `isWord=false`는 구두점 |
+| `SentenceData` | `index` `chinese` `translated` `words[]` `failed` `retrying?` | **v3에서 `korean` → `translated`로 개명** — 영어판에서 필드 이름이 거짓말을 하게 된다 |
+| 화면 상태 | `highlightedWords: string[]` | 교차 하이라이트 대상. v3에서 `highlightedKoreanWords`에서 개명 |
+| 화면 상태 | `engineStatus: string` | 상태 배지 문구 |
+
+### Sentence (프롬프터 · 파생 · 저장 안 함)
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `index` | number | 0부터 |
@@ -202,6 +226,83 @@ F8 + F9 + F10 동의/오프라인 스위치.
 
 ---
 
+## 8. 화면 언어 (F11 · v3 · 2026-09-02)
+
+### 왜 문자열 파일 하나인가
+
+문구가 컴포넌트마다 흩어져 있으면 "영어판에 한글이 남았다"를 사람 눈으로만 잡을 수 있다.
+한 파일에 모으고 **영어를 원본 타입으로** 두면, 한쪽에만 있는 키는 `tsc`가 잡는다.
+i18n 라이브러리는 넣지 않는다 — 두 언어, 한 화면 묶음에 런타임 의존성을 더할 이유가 없다.
+
+```
+src/lib/
+  i18n.ts          UiLang · 문자열 표(en 원본 / ko) · loadUiLang · targetLangFor
+                   ← React 없음. 팝업(popup.ts)이 같이 쓴다
+  i18nContext.tsx  LangProvider · useLang()  ← React 트리용
+  matchHighlight.ts 교차 하이라이트 매칭 (언어별 순수 함수 · 테스트 대상)
+```
+
+**두 파일로 나누는 이유**: ⌘⇧F 팝업은 React를 쓰지 않는 별도 엔트리다. 문자열표가
+`.tsx`에 있으면 팝업 번들에 React가 딸려 들어간다.
+
+### 데이터 흐름
+
+```
+UiLang ('ko' | 'en')
+  ├→ stringsFor(lang)      → 화면 문구
+  └→ targetLangFor(lang)   → translateFree(text, target) 의 타깃
+                            → 교차 하이라이트 규칙 선택
+```
+
+언어는 `LangProvider` 컨텍스트로 두 화면에 함께 내려간다. 번역 재실행은 언어를
+입력으로 걸어(effect 의존성) 언어가 바뀌면 화면의 번역이 새 언어로 다시 만들어진다.
+
+### 저장
+
+| 키 | 내용 | 기본값 |
+|---|---|---|
+| `study_ui_lang` | `'ko' \| 'en'` | 없으면 `navigator.language`가 `ko`로 시작하면 `ko`, 아니면 `en` |
+
+기존 설정 키(`prompter.settings`·`study_api_type` 등)는 **건드리지 않는다.** 언어는
+따로 사는 키라 `SETTINGS_VERSION`을 올릴 이유가 없다 — 올리면 사람들의 프롬프터 설정이
+초기화된다(F11-5).
+
+### 교차 하이라이트 매칭 (F11-3)
+
+| 언어 | 규칙 | 이유 |
+|---|---|---|
+| `ko` | 2글자 이상, 부분 문자열 포함 | 조사가 붙는다 — `기적`이 `기적도`에 걸려야 한다 |
+| `en` | 낱말 단위, 대소문자·구두점 무시, 3글자 이상, 불용어 제외 | 영어는 조사가 없어 부분 문자열이 필요 없고, 쓰면 `on`이 `only`에 걸린다 |
+
+길이 3 미만은 이미 걸러지므로(`a` `of` `to` `in` `is` 등은 자동 제외) 목록에는 **3글자
+이상인 기능어만** 넣는다. 확정 목록 — 테스트가 이 목록을 그대로 쓴다:
+
+```
+the  and  for  that  this  with  from  are  was  were  has  have  had
+you  your  they  them  their  its  but  not  all  any  can  will  would
+```
+
+목록을 늘리는 기준: 실제로 문장 절반이 물드는 것을 본 낱말만 추가한다. 짐작으로 늘리면
+정작 강조돼야 할 낱말이 조용히 빠진다.
+
+### 언어를 바꿨을 때 (경합)
+
+번역 요청은 왕복이 있고, 언어 전환은 그 사이에도 일어난다. 세 곳을 막는다.
+
+| 곳 | 처리 |
+|---|---|
+| 문장 번역 (S1) | 이미 있는 회차 카운터 `runIdRef`를 언어 전환에도 올린다. 옛 회차의 응답은 도착해도 버린다 |
+| 단어 뜻 캐시 (S2b `wordLookup.ts`) | 캐시 키에 언어를 넣는다. 언어별로 따로 산다 — 안 그러면 바꾼 뒤에도 옛 언어 뜻이 나온다 |
+| 화면에 있는 번역 | 언어를 번역 재실행 effect의 의존성으로 건다. 바꾸는 즉시 새 언어로 다시 만든다 |
+
+### Electron 껍데기
+
+창 제목·트레이 메뉴는 렌더러 밖(`main.js`)이라 컨텍스트가 닿지 않는다. main 프로세스가
+`app.getLocale()`로 자기 문자열을 고른다. 렌더러에서 언어를 바꿔도 트레이 문구는
+다음 실행에 반영된다 — 트레이는 앱 이름 수준의 문구뿐이라 이 지연을 감수한다.
+
+---
+
 ## 6. 테스트
 
 | 대상 | 방법 |
@@ -210,6 +311,9 @@ F8 + F9 + F10 동의/오프라인 스위치.
 | 상태 머신 | 화살표 연타 시 음성 겹침 없음 |
 | 톤 차이 | 사람이 듣고 판정 (자동화 불가) |
 | 폴백 | 네트워크 차단 상태로 실행 |
+| 문자열표 완결성 | `tsc` — `Strings` 타입이 두 표를 맞춘다 (F11-4) |
+| 교차 하이라이트 | 단위 테스트. 언어별 규칙 + 기능어가 안 걸리는 것 (F11-3) |
+| 영어판 한글 잔존 | 게이트에서 두 화면 전수 확인 (F11-4) |
 
 ## 7. 열린 질문
 

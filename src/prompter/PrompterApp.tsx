@@ -10,9 +10,11 @@ import {
   loadScript, loadSettings, saveIndex, saveScript, saveSettings,
   type PrompterSettings,
 } from './lib/settings';
+import { useLang } from '../lib/i18nContext';
 import './prompter.css';
 
 export function PrompterApp() {
+  const { t } = useLang();
   const saved = useMemo(() => loadScript(), []);
   const [text, setText] = useState(saved.text);
   const [running, setRunning] = useState(false);
@@ -104,48 +106,48 @@ export function PrompterApp() {
             setRunning(false);
           }}
         >
-          ← 원고 수정
+          {t.backToScript}
         </button>
 
         <div className="pr-progress">
           <strong>{index + 1}</strong> / {sentences.length}
           <span className={`pr-status pr-status-${status}`}>
-            {status === 'playing' ? '재생 중' : status === 'loading' ? '불러오는 중' : '정지'}
+            {status === 'playing' ? t.statusPlaying : status === 'loading' ? t.statusLoadingAudio : t.statusStopped}
           </span>
 
           {range ? (
             <span className="pr-range-chip">
-              ↻ 구간 {range.a + 1}–{range.b + 1}
-              <button onClick={clearRange} title="구간 해제 (C)">✕</button>
+              {t.rangeChip(range.a + 1, range.b + 1)}
+              <button onClick={clearRange} title={t.rangeClear}>✕</button>
             </span>
           ) : pendingStart !== null ? (
             <span className="pr-range-chip is-pending">
-              구간 시작 {pendingStart + 1} · 끝낼 문장에서 <kbd>B</kbd>
-              <button onClick={clearRange} title="취소 (C)">✕</button>
+              {t.rangePendingLead(pendingStart + 1)} <kbd>B</kbd> {t.rangePendingTail}
+              <button onClick={clearRange} title={t.rangeCancel}>✕</button>
             </span>
           ) : (
-            <button className="pr-range-set" onClick={markStart} title="구간 반복 시작점 (A)">
-              ↻ 구간 반복
+            <button className="pr-range-set" onClick={markStart} title={t.rangeSetHint}>
+              {t.rangeSet}
             </button>
           )}
         </div>
 
-        <div className="pr-speed-readout" title="실제로 읽고 있는 속도">
+        <div className="pr-speed-readout" title={t.paceTitle}>
           <span className="pr-speed-rate">{settings.rate.toFixed(2)}x</span>
           <span className="pr-speed-pace">
-            {settings.muted ? '무음' : pace !== null ? `${pace}자/분` : '측정 중…'}
+            {settings.muted ? t.paceMuted : pace !== null ? t.paceUnit(pace) : t.paceMeasuring}
           </span>
         </div>
       </header>
 
       {!edgeAvailable && (
         <div className="pr-banner">
-          브라우저에서 실행 중이라 기기 내장 음성을 씁니다. 온라인 중국어 음성은 Electron 앱(<code>npm run app:dev</code>)에서 나옵니다.
+          {t.bannerNoBridge} (<code>npm run app:dev</code>).
         </div>
       )}
       {fallbackReason && (
         <div className="pr-banner pr-banner-warn">
-          온라인 음성에 실패해 기기 음성으로 전환했습니다 — {fallbackReason}
+          {t.bannerFallback(fallbackReason)}
         </div>
       )}
 
@@ -168,16 +170,16 @@ export function PrompterApp() {
       />
 
       <footer className="pr-hints">
-        <span><kbd>Space</kbd> 다음 문장</span>
-        <span><kbd>↑</kbd><kbd>↓</kbd> 이동</span>
-        <span><kbd>Enter</kbd> 다시 듣기</span>
-        <span><kbd>Esc</kbd> 정지</span>
-        <span>단어에 마우스 = 뜻</span>
-        <span><kbd>Shift</kbd>+이동 = 소리 없이</span>
-        <span><kbd>[</kbd><kbd>]</kbd> 속도</span>
-        <span>휠로 원고 훑기</span>
-        <span><kbd>+</kbd><kbd>-</kbd> 글자</span>
-        <span className="pr-hint-strong"><kbd>A</kbd>~<kbd>B</kbd> 구간 반복 · <kbd>C</kbd> 해제</span>
+        <span><kbd>Space</kbd> {t.hintNext}</span>
+        <span><kbd>↑</kbd><kbd>↓</kbd> {t.hintMove}</span>
+        <span><kbd>Enter</kbd> {t.hintRepeat}</span>
+        <span><kbd>Esc</kbd> {t.hintStop}</span>
+        <span>{t.hintHover}</span>
+        <span><kbd>Shift</kbd>+{t.hintSilent}</span>
+        <span><kbd>[</kbd><kbd>]</kbd> {t.hintSpeed}</span>
+        <span>{t.hintScroll}</span>
+        <span><kbd>+</kbd><kbd>-</kbd> {t.hintFont}</span>
+        <span className="pr-hint-strong"><kbd>A</kbd>~<kbd>B</kbd> {t.hintRange} <kbd>C</kbd> {t.hintRangeClear}</span>
       </footer>
     </div>
   );

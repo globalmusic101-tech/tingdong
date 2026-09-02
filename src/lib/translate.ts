@@ -6,12 +6,16 @@
  * 다른 쪽은 옛날 방식(재시도 없음·길이 분할 없음·실패를 삼킴) 그대로였다.
  */
 
+import { loadUiLang, stringsFor, type UiLang } from './i18n';
+
 export type ApiType = 'openai' | 'free' | 'lmstudio';
 
 export type EngineConfig = {
   apiType: ApiType;
   apiKey: string;
   lmStudioUrl: string;
+  /** 화면 언어 — 사전 뜻과 오류 문구가 이 언어로 나온다 (F11-2) */
+  lang: UiLang;
 };
 
 export const STORAGE_KEYS = {
@@ -30,18 +34,20 @@ export function loadEngineConfig(): EngineConfig {
       apiType: saved === 'openai' || saved === 'lmstudio' ? saved : 'free',
       apiKey: localStorage.getItem(STORAGE_KEYS.apiKey) || '',
       lmStudioUrl: localStorage.getItem(STORAGE_KEYS.lmStudioUrl) || DEFAULT_LM_STUDIO_URL,
+      lang: loadUiLang(),
     };
   } catch {
-    return { apiType: 'free', apiKey: '', lmStudioUrl: DEFAULT_LM_STUDIO_URL };
+    return { apiType: 'free', apiKey: '', lmStudioUrl: DEFAULT_LM_STUDIO_URL, lang: loadUiLang() };
   }
 }
 
 /** 켜져 있는 엔진의 이름 — 상태 배지에 그대로 쓴다 */
-export function engineLabel(apiType: ApiType): string {
+export function engineLabel(apiType: ApiType, lang: UiLang): string {
+  const t = stringsFor(lang);
   switch (apiType) {
     case 'openai': return 'OpenAI API';
-    case 'lmstudio': return 'LM Studio (로컬)';
-    default: return 'Google 번역 (무료)';
+    case 'lmstudio': return t.engineNameLmStudio;
+    default: return t.engineNameFree;
   }
 }
 
@@ -174,7 +180,7 @@ async function translateFreeOnce(text: string, targetLang: string): Promise<stri
   throw lastErr;
 }
 
-export async function translateFree(text: string, targetLang: string = 'ko'): Promise<string> {
+export async function translateFree(text: string, targetLang: string): Promise<string> {
   if (!text.trim()) return '';
   const { parts, joiner } = chunkForFree(text);
   if (parts.length === 1) return translateFreeOnce(parts[0], targetLang);
@@ -202,13 +208,21 @@ async function readError(response: Response, engine: string): Promise<Error> {
   return new Error(`${engine} HTTP ${response.status}${detail ? ` — ${detail}` : ''}`);
 }
 
+/**
+ * LLM 프롬프트에 넣는 언어 이름. 화면 언어가 아니라 **모델에게 주는 말**이므로
+ * 영어로 통일한다 — 프롬프트를 화면 언어에 따라 바꾸면 같은 요청이 언어마다
+ * 다른 품질로 돌아온다.
+ */
 const langName = (targetLang: string) =>
-  targetLang === 'ko' ? '한국어' : targetLang === 'zh-CN' ? '중국어(간체)' : targetLang;
+  targetLang === 'ko' ? 'Korean'
+    : targetLang === 'en' ? 'English'
+    : targetLang === 'zh-CN' ? 'Simplified Chinese'
+    : targetLang;
 
 /** OpenAI 호환 채팅 API — OpenAI와 LM Studio가 같은 모양을 쓴다 */
 async function chat(messages: { role: string; content: string }[], cfg: EngineConfig): Promise<string> {
   const isOpenAI = cfg.apiType === 'openai';
-  if (isOpenAI && !cfg.apiKey) throw new Error('OpenAI API Key가 없습니다.');
+  if (isOpenAI && !cfg.apiKey) throw new Error(stringsFor(cfg.lang).errNoApiKey);
 
   const response = await fetch(
     isOpenAI ? 'https://api.openai.com/v1/chat/completions' : `${cfg.lmStudioUrl}/v1/chat/completions`,
@@ -226,7 +240,7 @@ async function chat(messages: { role: string; content: string }[], cfg: EngineCo
     }
   );
   if (!response.ok) {
-    throw await readError(response, isOpenAI ? 'OpenAI API' : 'LM Studio — 모델이 로드돼 있는지 확인하세요.');
+    throw await readError(response, isOpenAI ? 'OpenAI API' : stringsFor(cfg.lang).errLmStudioHint);
   }
   const data = await response.json();
   return data.choices?.[0]?.message?.content?.trim() ?? '';
@@ -272,8 +286,8 @@ export async function translateBatched(
 
   await mapWithLimit(groups, 4, async (group) => {
     const numbered = group.map((line, i) => `${i + 1}. ${line}`).join('\n');
-    const prompt = `다음 문장들을 ${langName(targetLang)}로 번역해줘.
-각 줄을 "번호. 번역" 형태로, 원문과 같은 번호를 붙여 같은 줄 수로만 출력해. 다른 설명은 하지 마.
+    const prompt = `Translate the following sentences into ${langName(targetLang)}.
+Output one line per sentence as "number. translation", keeping the same numbers and the same number of lines. No other explanation.
 
 ${numbered}`;
 
@@ -320,7 +334,7 @@ export async function translate(
   targetLang: string,
   cfg: EngineConfig,
 ): Promise<TranslateResult> {
-  if (!text.trim()) return { text: '', engine: engineLabel(cfg.apiType), usedFallback: false };
+  if (!text.trim()) return { text: '', engine: engineLabel(cfg.apiType, cfg.lang), usedFallback: false };
 
   try {
     let out: string;
@@ -329,7 +343,7 @@ export async function translate(
     } else {
       out = await translateFree(text, targetLang);
     }
-    return { text: out, engine: engineLabel(cfg.apiType), usedFallback: false };
+    return { text: out, engine: engineLabel(cfg.apiType, cfg.lang), usedFallback: false };
   } catch (err) {
     console.warn(`[${cfg.apiType}] 번역 실패:`, err);
     if (cfg.apiType === 'free') throw err;
@@ -337,7 +351,7 @@ export async function translate(
     const out = await translateFree(text, targetLang);
     return {
       text: out,
-      engine: engineLabel(cfg.apiType),
+      engine: engineLabel(cfg.apiType, cfg.lang),
       usedFallback: true,
       fallbackReason: (err as Error)?.message ?? String(err),
     };
@@ -350,23 +364,27 @@ export type LookupResult = {
   translation: string;
   partOfSpeech?: string;
   exampleChinese?: string;
-  exampleKorean?: string;
+  exampleTranslation?: string;
 };
 
-const LOOKUP_PROMPT = `You are a professional Chinese-to-Korean translator and lexicographer.
+const lookupPrompt = (targetLang: string) => {
+  const name = langName(targetLang);
+  return `You are a professional Chinese-to-${name} translator and lexicographer.
 Analyze the given Chinese text/word and return a JSON object with the following fields:
 {
-  "translation": "한국어 뜻(문맥에 맞거나 사전식 단어 정의)",
-  "partOfSpeech": "품사 (예: 동사, 명사, 대명사, 형용사, 부사, 동사구, 대명사구, 성어 등)",
-  "exampleChinese": "중국어 예문",
-  "exampleKorean": "예문에 대한 자연스러운 한국어 번역"
+  "translation": "the meaning in ${name} (contextual, or a dictionary definition)",
+  "partOfSpeech": "part of speech, written in ${name} (verb, noun, pronoun, adjective, adverb, verb phrase, idiom, ...)",
+  "exampleChinese": "a Chinese example sentence",
+  "exampleTranslation": "a natural ${name} translation of that example sentence"
 }
 Ensure example sentences are highly helpful for study. Respond ONLY with a valid JSON block, no markdown formatting tags.`;
+};
 
 /** LLM이 마크다운 코드블록을 씌워 돌려주는 일이 있어 벗겨낸다 */
-function parseLookupJson(raw: string): LookupResult {
+function parseLookupJson(raw: string, lang: UiLang): LookupResult {
+  const t = stringsFor(lang);
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-  if (!cleaned) throw new Error('사전 응답이 비어 있습니다');
+  if (!cleaned) throw new Error(t.errLookupEmpty);
 
   // 설명이 앞뒤로 붙어 와도 JSON 덩어리만 떼어낸다
   const start = cleaned.indexOf('{');
@@ -376,16 +394,16 @@ function parseLookupJson(raw: string): LookupResult {
   try {
     return JSON.parse(body) as LookupResult;
   } catch {
-    throw new Error(`사전 응답을 읽지 못했습니다: ${cleaned.slice(0, 80)}`);
+    throw new Error(t.errLookupUnreadable(cleaned.slice(0, 80)));
   }
 }
 
 async function lookupWithChat(text: string, cfg: EngineConfig): Promise<LookupResult> {
   const raw = await chat([
-    { role: 'system', content: `${LOOKUP_PROMPT} (Respond in raw JSON format only)` },
+    { role: 'system', content: `${lookupPrompt(cfg.lang)} (Respond in raw JSON format only)` },
     { role: 'user', content: text },
   ], cfg);
-  return parseLookupJson(raw);
+  return parseLookupJson(raw, cfg.lang);
 }
 
 /**
@@ -425,6 +443,18 @@ export function llmCooldownSeconds(): number {
   return Math.max(0, Math.ceil((llmCooldownUntil - Date.now()) / 1000));
 }
 
+/**
+ * 한도에 걸렸을 때 사람에게 보여줄 말. 두 자리(보내기 전·실패한 뒤)에서 같은 문구를
+ * 쓰므로 여기서 한 번만 만든다 — 따로 쓰면 언어를 옮길 때 한쪽만 옮겨진다.
+ */
+function quotaMessage(waitSeconds: number, lang: UiLang): string {
+  const t = stringsFor(lang);
+  if (quotaLikelyExhausted()) return t.quotaExhausted;
+  return waitSeconds > 90
+    ? t.quotaWaitMinutes(Math.ceil(waitSeconds / 60))
+    : t.quotaWaitSeconds(Math.ceil(waitSeconds));
+}
+
 // ── 무료 사전 ─────────────────────────────────────────────────
 
 /**
@@ -435,8 +465,8 @@ export function llmCooldownSeconds(): number {
  * 엉뚱한 말이 섞이기도 한다(盼望 → '오랫동안'). 실측해 보니 절반은 결과가 같아서
  * 단순한 쪽을 택했다. 되살리려면 zh→en에 dt=bd를 붙여 받고 그 목록을 한국어로 옮기면 된다.
  */
-export async function lookupFree(word: string): Promise<LookupResult> {
-  return { translation: await translateFree(word, 'ko') };
+export async function lookupFree(word: string, targetLang: string): Promise<LookupResult> {
+  return { translation: await translateFree(word, targetLang) };
 }
 
 export type LookupOutcome = {
@@ -458,21 +488,18 @@ export async function lookupWord(text: string, cfg: EngineConfig): Promise<Looku
     const waiting = llmCooldownSeconds();
     if (waiting > 0) {
       // 한도가 풀리기 전에는 보내지 않는다 — 보낼수록 남은 한도만 갉아먹는다
-      const howLong = waiting > 90 ? `약 ${Math.ceil(waiting / 60)}분` : `약 ${waiting}초`;
       return {
-        result: await lookupFree(text),
-        engine: engineLabel(cfg.apiType),
+        result: await lookupFree(text, cfg.lang),
+        engine: engineLabel(cfg.apiType, cfg.lang),
         usedFallback: true,
-        fallbackReason: quotaLikelyExhausted()
-          ? '무료 등급 한도를 계속 넘고 있습니다 — 기다려서 될 일이 아닐 수 있습니다(하루 한도). 설정에서 사전 엔진을 바꾸세요.'
-          : `무료 등급 한도 초과 — ${howLong} 뒤에 다시 사전을 씁니다`,
+        fallbackReason: quotaMessage(waiting, cfg.lang),
       };
     }
 
     try {
       const result = await lookupWithChat(text, cfg);
       quotaStrikes = 0;   // 한 번이라도 통했으면 처음부터 다시 센다
-      return { result, engine: engineLabel(cfg.apiType), usedFallback: false };
+      return { result, engine: engineLabel(cfg.apiType, cfg.lang), usedFallback: false };
     } catch (err) {
       console.warn(`[${cfg.apiType}] 사전 조회 실패, 무료 번역으로 대체:`, err);
       const raw = (err as Error)?.message ?? String(err);
@@ -484,19 +511,17 @@ export async function lookupWord(text: string, cfg: EngineConfig): Promise<Looku
         quotaStrikes += 1;
         llmCooldownUntil = Date.now() + seconds * 1000;
 
-        reason = quotaLikelyExhausted()
-          ? '무료 등급 한도를 계속 넘고 있습니다 — 기다려서 될 일이 아닐 수 있습니다(하루 한도). 설정에서 사전 엔진을 바꾸세요.'
-          : `무료 등급 한도 초과 — 약 ${Math.ceil(seconds / 60) > 1 ? `${Math.ceil(seconds / 60)}분` : `${Math.ceil(seconds)}초`} 뒤에 다시 사전을 씁니다`;
+        reason = quotaMessage(seconds, cfg.lang);
       }
 
       return {
-        result: await lookupFree(text),
-        engine: engineLabel(cfg.apiType),
+        result: await lookupFree(text, cfg.lang),
+        engine: engineLabel(cfg.apiType, cfg.lang),
         usedFallback: true,
         fallbackReason: reason,
       };
     }
   }
 
-  return { result: await lookupFree(text), engine: engineLabel('free'), usedFallback: false };
+  return { result: await lookupFree(text, cfg.lang), engine: engineLabel('free', cfg.lang), usedFallback: false };
 }
