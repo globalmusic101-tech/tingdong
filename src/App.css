@@ -443,8 +443,18 @@ body {
 
 
 /* Option 2: Always Show Pinyin for Paragraph Mode */
+
+/* 줄 사이는 row-gap으로 벌린다.
+   line-height로 벌리면 늘어난 여백의 절반이 글자 '위'로 들어가서,
+   병음이 한자에서 그만큼 떠 버린다 (24px 글자에 line-height 2.8이면 약 22px).
+   flex-wrap 컨테이너라 줄 간격은 row-gap이 정확히 맡는다. */
 .pinyin-mode-always.layout-mode-paragraph .study-mode {
-  line-height: 2.8;
+  line-height: 1.15;
+  row-gap: 16px;
+}
+
+.pinyin-mode-always.layout-mode-paragraph .chinese-sentence-wrapper {
+  row-gap: 16px;
 }
 
 .pinyin-mode-always.layout-mode-paragraph .word-block {
@@ -466,8 +476,9 @@ body {
   margin-bottom: -2px;
 }
 
+/* 구두점은 병음이 없다 — 병음 높이(18px)만큼 내려야 한자와 같은 줄에 앉는다 */
 .pinyin-mode-always.layout-mode-paragraph .punctuation-block {
-  line-height: 2.8;
+  line-height: 1.15;
   margin-top: 18px;
 }
 
@@ -524,8 +535,15 @@ body {
 }
 
 /* Option 2: Always Show Pinyin for Spaced Mode */
+
+/* 문장형과 같은 이유로 line-height가 아니라 row-gap으로 줄을 벌린다 */
 .pinyin-mode-always.layout-mode-spaced .study-mode {
-  line-height: 2.8;
+  line-height: 1.15;
+  row-gap: 14px;
+}
+
+.pinyin-mode-always.layout-mode-spaced .chinese-sentence-wrapper {
+  row-gap: 14px;
 }
 
 .pinyin-mode-always.layout-mode-spaced .pinyin {
@@ -544,8 +562,8 @@ body {
 }
 
 .pinyin-mode-always.layout-mode-spaced .punctuation-block {
-  line-height: 2.8;
-  margin-top: 18px;
+  line-height: 1.15;
+  margin-top: 20px;
 }
 
 .pinyin-mode-always.layout-mode-spaced .word-block:hover, 
