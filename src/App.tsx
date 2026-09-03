@@ -5,8 +5,10 @@ import {
   STORAGE_KEYS,
   mapWithLimit,
   translateFree,
+  translateSentencesFree,
   type ApiType,
 } from './lib/translate';
+import { isChineseSource, splitIntoSentences } from './lib/splitInput';
 import { useLang } from './lib/i18nContext';
 import { highlightTerms, matchesHighlight } from './lib/matchHighlight';
 import './App.css';
@@ -19,16 +21,48 @@ type WordData = {
   isWord: boolean;
 };
 
+/** 번역 방향 — 'zh2ui'는 중국어→화면언어, 'ui2zh'는 화면언어→중국어 */
+type Direction = 'zh2ui' | 'ui2zh';
+
 type SentenceData = {
   index: number;
   chinese: string;
   translated: string;
+  /** 사용자가 실제로 친 문장 — 다시 시도할 때 이걸 다시 보낸다 */
+  origin: string;
   words: WordData[];
   /** 이 문장의 번역이 실패했는가 — 실패를 숨기면 원고가 조용히 빠진다 */
   failed: boolean;
   /** 다시 시도하는 중 */
   retrying?: boolean;
 };
+
+/**
+ * 중국어 문장 하나를 단어 블록으로 쪼갠다.
+ * 처음 번역할 때와 실패 후 다시 시도할 때가 같은 결과를 내야 해서 한 군데 둔다.
+ */
+function buildWords(
+  sentence: string,
+  sIdx: number,
+  literal: { [key: string]: string },
+): WordData[] {
+  const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' });
+  return Array.from(segmenter.segment(sentence)).map((seg, wIdx) => {
+    const wordStr = seg.segment;
+    const id = `word-${sIdx}-${wIdx}`;
+    if (!/[\u4e00-\u9fa5]/.test(wordStr)) {
+      return { id, chinese: wordStr, pinyin: '', translationLiteral: wordStr, isWord: false };
+    }
+    return {
+      id,
+      chinese: wordStr,
+      pinyin: pinyin(wordStr, { toneType: 'symbol' }),
+      // 자동 단어 번역이 꺼져 있으면 빈 값으로 두고, 호버할 때 채운다
+      translationLiteral: literal[wordStr] || '',
+      isWord: true,
+    };
+  });
+}
 
 function App() {
   const { lang, target, t } = useLang();
@@ -40,6 +74,8 @@ function App() {
   const [autoWordTranslation, setAutoWordTranslation] = useState(() => localStorage.getItem('study_auto_word_trans') === 'true');
   
   const [sentencesData, setSentencesData] = useState<SentenceData[]>([]);
+  /** 지금 화면에 떠 있는 번역이 어느 방향인가 — 패널 제목과 재시도 방향을 가른다 */
+  const [direction, setDirection] = useState<Direction>('zh2ui');
   const [hoveredWordId, setHoveredWordId] = useState<string | null>(null);
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
   const [highlightedWords, setHighlightedWords] = useState<string[]>([]);
@@ -81,6 +117,8 @@ function App() {
   useEffect(() => {
     if (!inputText.trim()) {
       setSentencesData([]);
+      // 원고를 비웠는데 '번역됨' 제목이 남으면 방향을 잘못 읽는다
+      setDirection('zh2ui');
       return;
     }
 
@@ -107,29 +145,6 @@ function App() {
     window.electronAPI?.syncEngineConfig?.({ apiType, apiKey, lmStudioUrl, lang });
   }, [apiKey, apiType, lmStudioUrl, autoWordTranslation, lang]);
 
-  // Helper to split text into sentences
-  const splitIntoSentences = (text: string): string[] => {
-    // Split by punctuation and keep the punctuation
-    const parts = text.split(/([。！？!?\n]+)/);
-    const sentences: string[] = [];
-    let currentSentence = '';
-
-    for (const part of parts) {
-      if (!part) continue;
-      if (/^[。！？!?\n]+$/.test(part)) {
-        currentSentence += part;
-        sentences.push(currentSentence);
-        currentSentence = '';
-      } else {
-        currentSentence += part;
-      }
-    }
-    if (currentSentence.trim()) {
-      sentences.push(currentSentence);
-    }
-    return sentences.map(s => s.trim()).filter(Boolean);
-  };
-
   const processText = async (text: string) => {
     // 뒤늦게 끝난 옛 번역이 새 결과를 덮지 않도록 회차를 매긴다
     const runId = ++runIdRef.current;
@@ -141,38 +156,56 @@ function App() {
     setHoveredSentenceIndex(null);
 
     try {
-      const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-      let chineseText = text;
+      // 어느 쪽 말인지 보고 방향을 정한다. 왼쪽은 언제나 중국어 분석 패널이므로,
+      // 중국어를 넣으면 그대로 두고, 아니면 중국어로 옮겨서 왼쪽에 세운다.
+      const sourceIsChinese = isChineseSource(text);
+      setDirection(sourceIsChinese ? 'zh2ui' : 'ui2zh');
 
-      if (!hasChinese) {
-        // 한국어/영어 → 중국어 변환 (선택된 엔진 사용)
-        try {
-          chineseText = await translateFree(text, 'zh-CN');
-        } catch (err) {
-          if (isStale()) return;
-          setEngineStatus(`❌ ${t.statusToChineseFailed(String((err as Error)?.message ?? err))}`);
-          // 지난 번역이 남아 있으면 방금 넣은 원고가 그 뒤에 가려진다 — 치우고 원고를 보여준다
-          setSentencesData([]);
-          return;
-        }
-      }
-      if (isStale()) return;
-
-      // 문장 단위 분리
-      const chineseSentences = splitIntoSentences(chineseText);
+      // 나누는 기준은 언제나 사용자가 친 원문이다.
+      // 통째로 옮기고 나서 자르면 문장 수가 원문과 어긋나 양쪽이 통째로 밀린다.
+      const originSentences = splitIntoSentences(text);
 
       // 문장 번역은 무료 엔진만 쓴다. 실측으로 한 문장 왕복이 무료는 약 240ms,
       // LLM은 몇 초였다. 번역기는 속도가 전부라 여기서 LLM을 쓸 이유가 없다.
       // (설정에서 고른 엔진은 '단어 사전' 쪽에서만 쓰인다)
+      //
+      // 문장을 묶어 한 번에 보낸다. 하나씩 보내면 왕복이 문장 수만큼 쌓이고,
+      // 앞뒤 문맥이 없어 번역도 웹 번역기와 벌어진다.
+      // 묶음에서 빠진 문장은 그것만 하나씩 다시 보낸다.
+      const toChinese = sourceIsChinese
+        ? new Map<number, string>()
+        : await translateSentencesFree(originSentences, 'zh-CN');
+      if (isStale()) return;
+
+      const converted = sourceIsChinese
+        ? originSentences.map((sentence) => ({ chinese: sentence, failed: false }))
+        : await mapWithLimit(originSentences, 4, async (sentence, i) => {
+            const hit = toChinese.get(i);
+            if (hit) return { chinese: hit, failed: false };
+            try {
+              return { chinese: await translateFree(sentence, 'zh-CN'), failed: false };
+            } catch (err) {
+              console.warn(`[to-zh-${i}] 중국어 변환 실패:`, err);
+              // 옮기지 못한 문장은 원문 그대로 세워둔다 — 빈칸으로 두면 원고에서 사라진다
+              return { chinese: sentence, failed: true };
+            }
+          });
+      if (isStale()) return;
+
+      const chineseSentences = converted.map((c) => c.chinese);
+
+      // 중국어를 넣었을 때만 오른쪽을 번역해서 채운다.
+      // 반대 방향이면 오른쪽은 사용자가 친 원문 그대로다 — 되돌려 옮기면 원문이 바뀌어 보인다.
+      const batched = sourceIsChinese
+        ? await translateSentencesFree(chineseSentences, target)
+        : new Map<number, string>();
+      if (isStale()) return;
+
       const results = await mapWithLimit(chineseSentences, 4, async (cSent, sIdx) => {
         // 단어 쪼개기는 통신이 필요 없다 — 먼저 해둔다
-        const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' });
-        const segments = Array.from(segmenter.segment(cSent)) as any[];
-
-        // 중국어 단어들만 추출하여 번역 API 한 번에 일괄 요청 (배치 처리로 개별 호출 제거)
-        const chineseWords = segments
-          .map((seg) => seg.segment)
-          .filter((wordStr) => /[\u4e00-\u9fa5]/.test(wordStr));
+        const chineseWords = buildWords(cSent, sIdx, {})
+          .filter((word) => word.isWord)
+          .map((word) => word.chinese);
 
         // 단어 뜻은 문장 번역과 아무 상관이 없다. 기다렸다 보내면 두 왕복이 그대로 더해진다.
         const wordsPromise: Promise<{ [key: string]: string }> =
@@ -201,47 +234,27 @@ function App() {
               )
             : Promise.resolve({});
 
-        // 문장 전체 번역 (선택된 엔진 사용)
-        let sentenceTranslation = '';
-        let failed = false;
-        try {
-          sentenceTranslation = await translateFree(cSent, target);
-        } catch (err) {
-          console.warn(`[sentence-${sIdx}] 문장 번역 실패:`, err);
-          failed = true;
-        }
-
-        const literalTranslations = await wordsPromise;
-
-        const words: WordData[] = [];
-        for (let wIdx = 0; wIdx < segments.length; wIdx++) {
-          const seg = segments[wIdx];
-          const wordStr = seg.segment;
-          const isChineseWord = /[\u4e00-\u9fa5]/.test(wordStr);
-
-          if (isChineseWord) {
-            const wordPinyin = pinyin(wordStr, { toneType: 'symbol' });
-            // 자동 단어 번역이 꺼져 있으면 빈 값으로 두고, 호버할 때 채운다
-            const literal = literalTranslations[wordStr] || '';
-            words.push({
-              id: `word-${sIdx}-${wIdx}`,
-              chinese: wordStr,
-              pinyin: wordPinyin,
-              translationLiteral: literal,
-              isWord: true,
-            });
-          } else {
-            words.push({
-              id: `word-${sIdx}-${wIdx}`,
-              chinese: wordStr,
-              pinyin: '',
-              translationLiteral: wordStr,
-              isWord: false,
-            });
+        // 오른쪽 패널 채우기.
+        // 중국어를 넣었으면 번역해서, 아니면 사용자가 친 원문을 그대로 세운다.
+        let sentenceTranslation = originSentences[sIdx];
+        let failed = converted[sIdx].failed;
+        if (sourceIsChinese) {
+          // 묶음에서 이미 받았으면 그것을 쓰고, 없을 때만 다시 보낸다
+          sentenceTranslation = batched.get(sIdx) ?? '';
+          if (!sentenceTranslation) {
+            try {
+              sentenceTranslation = await translateFree(cSent, target);
+            } catch (err) {
+              console.warn(`[sentence-${sIdx}] 문장 번역 실패:`, err);
+              failed = true;
+            }
           }
         }
 
-        return { index: sIdx, chinese: cSent, translated: sentenceTranslation, words, failed };
+        const literalTranslations = await wordsPromise;
+        const words = buildWords(cSent, sIdx, literalTranslations);
+
+        return { index: sIdx, chinese: cSent, origin: originSentences[sIdx], translated: sentenceTranslation, words, failed };
       });
 
       if (isStale()) return;
@@ -279,8 +292,14 @@ function App() {
 
     mark({ retrying: true });
     try {
-      const translated = await translateFree(entry.chinese, target);
-      mark({ translated, failed: false, retrying: false });
+      if (direction === 'ui2zh') {
+        // 이 방향에서 실패한 건 '중국어로 옮기기'다 — 오른쪽 원문은 처음부터 멀쩡했다
+        const chinese = await translateFree(entry.origin, 'zh-CN');
+        mark({ chinese, words: buildWords(chinese, index, {}), failed: false, retrying: false });
+      } else {
+        const translated = await translateFree(entry.origin, target);
+        mark({ translated, failed: false, retrying: false });
+      }
     } catch (err) {
       console.warn(`[sentence-${index}] 재시도 실패:`, err);
       mark({ failed: true, retrying: false });
@@ -376,6 +395,7 @@ function App() {
   const handleClear = () => {
     setInputText('');
     setSentencesData([]);
+    setDirection('zh2ui');
     setIsEditing(true);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
@@ -653,7 +673,7 @@ function App() {
       <main className="split-view">
         <section className="pane left-pane">
           <div className="pane-header">
-            <span>{t.sourcePaneTitle}</span>
+            <span>{direction === 'zh2ui' ? t.sourcePaneTitle : t.sourcePaneTitleTranslated}</span>
             {inputText && (
               <button className="clear-btn" onClick={handleClear} title={t.clearHint}>
                 ✕
@@ -723,7 +743,7 @@ function App() {
 
         <section className="pane right-pane">
           <div className="pane-header">
-            <span>{t.targetPaneTitle}</span>
+            <span>{direction === 'zh2ui' ? t.targetPaneTitle : t.targetPaneTitleDetected}</span>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               {engineStatus && !isLoading && !hasProblem && (
                 <span className="engine-status-badge">{engineStatus}</span>

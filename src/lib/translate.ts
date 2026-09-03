@@ -191,6 +191,96 @@ export async function translateFree(text: string, targetLang: string): Promise<s
 }
 
 /**
+ * 문장을 한 묶음에 몇 개까지 넣을지.
+ * 묶음이 깨지면 그 묶음만 문장별로 다시 보내므로, 크게 잡을수록 되돌리는 값이 커진다.
+ */
+export const FREE_BATCH_SENTENCES = 10;
+
+/**
+ * 문장들을 한 번에 보낼 묶음으로 나눈다.
+ *
+ * 문장 수(FREE_BATCH_SENTENCES)와 글자 수(FREE_MAX_CHARS) 둘 다 지킨다.
+ * 글자 수를 넘기면 translateFree가 안에서 또 쪼개는데, 그때 줄 수가 유지된다는
+ * 보장이 없어 문장과 번역이 통째로 밀린다. 혼자서도 한도를 넘는 긴 문장은
+ * 묶지 않고 홀로 둔다 — 어차피 쪼개져야 한다.
+ */
+export function groupSentencesForFree(sentences: string[]): number[][] {
+  const groups: number[][] = [];
+  let cur: number[] = [];
+  let len = 0;
+
+  const flush = () => {
+    if (cur.length) groups.push(cur);
+    cur = [];
+    len = 0;
+  };
+
+  sentences.forEach((sentence, index) => {
+    const cost = sentence.length + 1; // 이어붙일 줄바꿈 한 칸
+    if (cost > FREE_MAX_CHARS) {
+      flush();
+      groups.push([index]);
+      return;
+    }
+    if (cur.length >= FREE_BATCH_SENTENCES || len + cost > FREE_MAX_CHARS) flush();
+    cur.push(index);
+    len += cost;
+  });
+  flush();
+
+  return groups;
+}
+
+/**
+ * 문장들을 묶어 한 번에 번역한다.
+ *
+ * 문장마다 따로 보내면 왕복이 문장 수만큼 쌓이고, 무엇보다 앞뒤 문맥이 없어
+ * 웹 번역기와 결과가 벌어진다. 줄바꿈으로 이어 보내면 두 문제가 같이 풀린다.
+ *
+ * 돌아온 줄 수가 보낸 문장 수와 다르면 그 묶음은 통째로 버린다 — 한 줄만 밀려도
+ * 모든 문장에 남의 뜻이 붙는다. 버린 묶음은 부르는 쪽에서 문장별로 다시 보낸다.
+ */
+export async function translateSentencesFree(
+  sentences: string[],
+  targetLang: string,
+): Promise<Map<number, string>> {
+  const done = new Map<number, string>();
+  if (sentences.length === 0) return done;
+
+  const groups = groupSentencesForFree(sentences);
+
+  await mapWithLimit(groups, 4, async (group) => {
+    // 혼자인 묶음은 이어붙일 것도 나눌 것도 없다 — 그대로 보내고 그대로 받는다
+    if (group.length === 1) {
+      try {
+        done.set(group[0], await translateFree(sentences[group[0]], targetLang));
+      } catch (err) {
+        console.warn(`[batch] 문장 ${group[0]} 번역 실패 — 문장별로 되돌아갑니다:`, err);
+      }
+      return;
+    }
+
+    try {
+      const joined = group.map((i) => sentences[i]).join('\n');
+      const lines = (await translateFree(joined, targetLang)).split('\n');
+      if (lines.length !== group.length) {
+        console.warn(`[batch] 문장 ${group.length}개에 번역 ${lines.length}줄 — 어긋나서 묶음을 버립니다`);
+        return;
+      }
+      group.forEach((sentenceIndex, i) => {
+        const line = lines[i].trim();
+        // 빈 줄은 채우지 않는다 — 부르는 쪽이 이 문장만 다시 보낸다
+        if (line) done.set(sentenceIndex, line);
+      });
+    } catch (err) {
+      console.warn('[batch] 묶음 번역 실패 — 문장별로 되돌아갑니다:', err);
+    }
+  });
+
+  return done;
+}
+
+/**
  * 응답 본문에 담긴 진짜 이유를 꺼낸다.
  * 'HTTP 400'만 보여주면 키가 틀린 건지, 모델이 없는 건지, 한도를 넘긴 건지 알 수가 없다.
  */

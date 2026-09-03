@@ -61,6 +61,9 @@ const en = {
 
   sourcePaneTitle: 'Chinese (Simplified) — detected',
   targetPaneTitle: 'English',
+  // 반대 방향 — 영어를 넣으면 왼쪽이 '번역된 중국어', 오른쪽이 '감지된 영어'가 된다
+  sourcePaneTitleTranslated: 'Chinese (Simplified) — translated',
+  targetPaneTitleDetected: 'English — detected',
   clearHint: 'Clear the text',
   inputPlaceholder: 'Enter text',
   translationPlaceholder: 'The translation appears here.',
@@ -76,7 +79,6 @@ const en = {
   retry: 'Try again',
 
   statusFree: 'Google Translate (free)',
-  statusToChineseFailed: (reason: string) => `Could not convert to Chinese: ${reason}`,
   statusSomeFailed: (failed: number, total: number) =>
     `${failed} of ${total} sentences failed — press “Try again” where they are`,
   statusError: 'Something went wrong while translating.',
@@ -305,6 +307,9 @@ const ko: Strings = {
 
   sourcePaneTitle: '중국어(간체) - 감지됨',
   targetPaneTitle: '한국어',
+  // 반대 방향 — 한국어를 넣으면 왼쪽이 '번역된 중국어', 오른쪽이 '감지된 한국어'가 된다
+  sourcePaneTitleTranslated: '중국어(간체) - 번역됨',
+  targetPaneTitleDetected: '한국어 - 감지됨',
   clearHint: '텍스트 지우기',
   inputPlaceholder: '텍스트 입력',
   translationPlaceholder: '번역이 여기에 표시됩니다.',
@@ -320,7 +325,6 @@ const ko: Strings = {
   retry: '다시 시도',
 
   statusFree: 'Google 번역 (무료)',
-  statusToChineseFailed: (reason: string) => `중국어 변환 실패: ${reason}`,
   statusSomeFailed: (failed: number, total: number) =>
     `${total}문장 중 ${failed}문장 번역 실패 — 해당 자리의 '다시 시도'를 누르세요`,
   statusError: '번역 중 오류가 발생했습니다.',
