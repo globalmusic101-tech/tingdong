@@ -24,6 +24,15 @@ type WordData = {
 /** 번역 방향 — 'zh2ui'는 중국어→화면언어, 'ui2zh'는 화면언어→중국어 */
 type Direction = 'zh2ui' | 'ui2zh';
 
+/** 입력창이 열린 쪽 */
+type EditSide = 'left' | 'right';
+
+/**
+ * 원문이 놓일 자리. 중국어는 언제나 왼쪽, 화면 언어는 언제나 오른쪽이다.
+ * 자리가 언어를 따라 고정돼야 "왼쪽에 쳤는데 오른쪽에 나온다"가 없어진다.
+ */
+const homeSide = (d: Direction): EditSide => (d === 'zh2ui' ? 'left' : 'right');
+
 type SentenceData = {
   index: number;
   chinese: string;
@@ -76,6 +85,8 @@ function App() {
   const [sentencesData, setSentencesData] = useState<SentenceData[]>([]);
   /** 지금 화면에 떠 있는 번역이 어느 방향인가 — 패널 제목과 재시도 방향을 가른다 */
   const [direction, setDirection] = useState<Direction>('zh2ui');
+  /** 입력창이 어느 쪽 패널에 열려 있는가 — 중국어는 왼쪽, 한국어는 오른쪽에 친다 */
+  const [editSide, setEditSide] = useState<EditSide>('left');
   const [hoveredWordId, setHoveredWordId] = useState<string | null>(null);
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
   const [highlightedWords, setHighlightedWords] = useState<string[]>([]);
@@ -269,9 +280,11 @@ function App() {
         setEngineStatus(`🟢 ${t.statusFree}`);
       }
 
-      // 아직 입력 중이면 편집창을 빼앗지 않는다 — 치던 글자가 사라진다
+      // 아직 입력 중이면 편집창을 빼앗지 않는다 — 치던 글자가 사라진다.
+      // 손을 뗀 뒤에야 원문을 제 자리(중국어는 왼쪽, 한국어는 오른쪽)로 옮긴다.
       if (document.activeElement !== textareaRef.current) {
         setIsEditing(false);
+        setEditSide(homeSide(sourceIsChinese ? 'zh2ui' : 'ui2zh'));
       }
     } catch (error) {
       if (isStale()) return;
@@ -396,6 +409,7 @@ function App() {
     setInputText('');
     setSentencesData([]);
     setDirection('zh2ui');
+    setEditSide('left');
     setIsEditing(true);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
@@ -403,8 +417,48 @@ function App() {
   /** 실패·대체 알림인가 — 이런 건 잘라내면 안 된다 */
   const hasProblem = engineStatus.startsWith('⚠️') || engineStatus.startsWith('❌');
 
+  const isEmpty = inputText.trim() === '';
+  /** 번역 결과가 없는데 편집창까지 감추면 원고가 사라진 것처럼 보인다 */
+  const editorOpen = isEditing || (sentencesData.length === 0 && !isEmpty);
+
+  /**
+   * 원문이 있는 쪽만 편집할 수 있다.
+   * 결과 쪽을 눌렀을 때 원문이 튀어나오면, 방금 읽던 글과 다른 글이 나타난다.
+   * 빈 화면에서는 양쪽 다 열 수 있고, 어느 쪽에 치느냐가 곧 번역 방향이 된다.
+   */
+  const canEdit = (side: EditSide) => isEmpty || homeSide(direction) === side;
+
+  const openEditor = (side: EditSide) => {
+    if (!canEdit(side)) return;
+    setEditSide(side);
+    setIsEditing(true);
+  };
+
+  /** 입력창은 한 번에 한 쪽에만 열린다 — 양쪽이 같은 원고를 나눠 갖지 않도록 */
+  const renderEditor = () => (
+    <textarea
+      ref={textareaRef}
+      className="text-input"
+      placeholder={editSide === 'left' ? t.inputPlaceholderChinese : t.inputPlaceholderTarget}
+      maxLength={5000}
+      value={inputText}
+      onPaste={() => { pastedAtRef.current = Date.now(); }}
+      onChange={(e) => setInputText(e.target.value)}
+      onBlur={() => {
+        if (inputText.trim() && !isLoading) {
+          setIsEditing(false);
+          setEditSide(homeSide(direction));
+        }
+      }}
+      autoFocus
+    />
+  );
+
   const renderTranslation = () => {
-    if (sentencesData.length === 0) return <div className="placeholder-text">{t.translationPlaceholder}</div>;
+    if (sentencesData.length === 0) {
+      // 빈 화면에서는 '번역이 여기 표시됩니다'가 아니라 칠 수 있는 자리라고 알린다
+      return <div className="placeholder-text">{isEmpty ? t.inputPlaceholderTarget : t.translationPlaceholder}</div>;
+    }
 
     if (translationMode === 'literal') {
       // Literal Mode: Word-by-word display grouped by sentences
@@ -674,31 +728,19 @@ function App() {
         <section className="pane left-pane">
           <div className="pane-header">
             <span>{direction === 'zh2ui' ? t.sourcePaneTitle : t.sourcePaneTitleTranslated}</span>
-            {inputText && (
+            {inputText && homeSide(direction) === 'left' && (
               <button className="clear-btn" onClick={handleClear} title={t.clearHint}>
                 ✕
               </button>
             )}
           </div>
           
-          {/* 번역 결과가 없는데 편집창까지 감추면 원고가 사라진 것처럼 보인다 */}
-          <div className="pane-content-wrapper" onClick={() => setIsEditing(true)}>
-            {isEditing || (sentencesData.length === 0 && inputText.trim() !== '') ? (
-              <textarea 
-                ref={textareaRef}
-                className="text-input" 
-                placeholder={t.inputPlaceholder}
-                maxLength={5000}
-                value={inputText}
-                onPaste={() => { pastedAtRef.current = Date.now(); }}
-                onChange={(e) => setInputText(e.target.value)}
-                onBlur={() => {
-                  if (inputText.trim() && !isLoading) {
-                    setIsEditing(false);
-                  }
-                }}
-                autoFocus
-              />
+          <div
+            className={`pane-content-wrapper ${canEdit('left') ? '' : 'read-only'}`}
+            onClick={() => openEditor('left')}
+          >
+            {editorOpen && editSide === 'left' ? (
+              renderEditor()
             ) : (
               <div className="content-display study-mode">
                 {sentencesData.length > 0 ? (
@@ -727,7 +769,7 @@ function App() {
                     </span>
                   ))
                 ) : (
-                  <div className="placeholder-text">{t.inputPlaceholder}</div>
+                  <div className="placeholder-text">{t.inputPlaceholderChinese}</div>
                 )}
               </div>
             )}
@@ -749,6 +791,11 @@ function App() {
                 <span className="engine-status-badge">{engineStatus}</span>
               )}
               {isLoading && <span className="loading-indicator">{t.loading}</span>}
+              {inputText && homeSide(direction) === 'right' && (
+                <button className="clear-btn" onClick={handleClear} title={t.clearHint}>
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
@@ -757,8 +804,11 @@ function App() {
             <div className="engine-status-line">{engineStatus}</div>
           )}
 
-          <div className="pane-content-wrapper">
-            {renderTranslation()}
+          <div
+            className={`pane-content-wrapper ${canEdit('right') ? '' : 'read-only'}`}
+            onClick={() => openEditor('right')}
+          >
+            {editorOpen && editSide === 'right' ? renderEditor() : renderTranslation()}
           </div>
         </section>
       </main>

@@ -66,6 +66,9 @@ const en = {
   targetPaneTitleDetected: 'English — detected',
   clearHint: 'Clear the text',
   inputPlaceholder: 'Enter text',
+  // 어느 쪽에 치는지가 곧 번역 방향이라, 빈 화면에서도 그걸 읽을 수 있어야 한다
+  inputPlaceholderChinese: 'Enter Chinese',
+  inputPlaceholderTarget: 'Enter English',
   translationPlaceholder: 'The translation appears here.',
   editHint: 'Click the text to edit it again.',
   loading: 'Translating…',
@@ -312,6 +315,9 @@ const ko: Strings = {
   targetPaneTitleDetected: '한국어 - 감지됨',
   clearHint: '텍스트 지우기',
   inputPlaceholder: '텍스트 입력',
+  // 어느 쪽에 치는지가 곧 번역 방향이라, 빈 화면에서도 그걸 읽을 수 있어야 한다
+  inputPlaceholderChinese: '중국어를 입력하세요',
+  inputPlaceholderTarget: '한국어를 입력하세요',
   translationPlaceholder: '번역이 여기에 표시됩니다.',
   editHint: '본문을 클릭하면 다시 수정할 수 있습니다.',
   loading: '번역 중...',
