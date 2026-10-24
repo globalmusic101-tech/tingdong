@@ -80,6 +80,11 @@ function StudySession({ passage, data, meanings, onCursor, onStopReady, onSettin
     setFallback(false);
   }, [data.settings]);
 
+  useEffect(() => {
+    const target = document.querySelector<HTMLButtonElement>(`button[data-sentence="${lines[playback.index]?.id}"]`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  }, [lines, playback.index]);
+
   const readings = useMemo(() => lines.map(line => {
     const sounds = pinyin(line.text, { type: 'array', toneType: 'symbol' });
     return [...line.text].map((char, i) => ({ char, sound: sounds[i] !== char ? sounds[i] : '' }));

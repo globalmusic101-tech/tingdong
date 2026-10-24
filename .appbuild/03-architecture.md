@@ -421,6 +421,10 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 - renderer는 언어별 로컬 판본 목록과 선택값을 별도로 보관하고, 선택 파일이 없으면 정적 기본 뜻으로 merge합니다.
 - `gapMs = 0`은 연속 읽기이며 storage validator와 playback timer가 허용합니다.
 
+## F19 architecture — 자동 진행 스크롤
+
+`StudySession`은 playback index가 바뀔 때 현재 문장 버튼을 찾아 `scrollIntoView({ block: 'center' })`로 표시합니다. 데이터가 없는 장을 임의로 생성하지 않고, 장 확장은 출처가 확인된 원문과 병렬 뜻 데이터가 함께 들어올 때만 추가합니다.
+
 # F16 architecture — 번역문 소스와 반복 진행
 
 - `src/bible/lessons.ts`의 `verseMeanings`는 앱 번역 결과가 아니라 고정된 기존 번역문 데이터입니다.
