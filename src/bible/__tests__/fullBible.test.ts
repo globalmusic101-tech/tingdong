@@ -9,7 +9,10 @@ describe('full public-domain Bible catalog', () => {
       for (const item of book.chapters) {
         const chapter = chapterFor(book.id, item.chapter);
         expect(chapter.verses.length).toBeGreaterThan(0);
-        expect(partition(chapter, 'story').length).toBeGreaterThan(0);
+        const story = partition(chapter, 'story');
+        expect(story.length).toBeGreaterThan(0);
+        expect(story.every(p => p.heading?.title)).toBe(true);
+        expect(story.flatMap(p => p.verses).map(v => v.number)).toEqual(chapter.verses.map(v => v.number));
         expect(partition(chapter, 'five').flatMap(p => p.verses)).toHaveLength(chapter.verses.length);
       }
     }

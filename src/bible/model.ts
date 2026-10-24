@@ -2,6 +2,7 @@ import { splitSentences } from '../prompter/lib/splitSentences';
 import type { Bilingual } from './lessons';
 import raw from './mark1.json';
 import fullRaw from './bible-full.json';
+import contextRaw from './context-headings.json';
 
 export type Division = 'story' | 'five';
 export type Verse = { number: number; text: string };
@@ -11,14 +12,16 @@ export type Passage = { id: string; start: number; end: number; heading?: Headin
 export type StudySentence = { id: string; verse: number; text: string };
 export const chapter: Chapter = raw;
 type FullBible = { version: string; books: { id: string; name: string; chapters: { chapter: number; verses: { number: number; zh: string; ko: string; en: string }[] }[] }[] };
+type ContextCatalog = { version: number; source: string; books: Record<string, Record<string, { start: number; end: number; title: string; key: string }[]>> };
 export const bibleBooks = (fullRaw as FullBible).books;
+const contextHeadings = contextRaw as ContextCatalog;
 export function chapterFor(bookId: string, number: number): Chapter {
   if (bookId === chapter.book && number === chapter.chapter) return chapter;
   const book = bibleBooks.find(item => item.id === bookId);
   const found = book?.chapters.find(item => item.chapter === number);
   if (!book || !found) return chapter;
   return { version: 'cmn-cu89s', book: book.id, chapter: found.chapter, source: `https://ebible.org/cmn-cu89s/${book.id}${String(found.chapter).padStart(2, '0')}.htm`,
-    verses: found.verses.map(({ number: verse, zh }) => ({ number: verse, text: zh })), headings: [] };
+    verses: found.verses.map(({ number: verse, zh }) => ({ number: verse, text: zh })), headings: contextHeadings.books[book.id]?.[String(found.chapter)] ?? [] };
 }
 export function meaningsFor(bookId: string, number: number): Record<number, Bilingual> {
   const book = bibleBooks.find(item => item.id === bookId);
@@ -35,7 +38,8 @@ export function partition(data: Chapter, mode: Division): Passage[] {
   }
   let end = 0;
   for (const h of headings) {
-    if (!Number.isInteger(h.start) || !Number.isInteger(h.end) || h.start <= end || h.end < h.start || h.end > verses.length) {
+    if (!Number.isInteger(h.start) || !Number.isInteger(h.end) || h.start <= end || h.end < h.start
+      || !verses.some(verse => verse.number === h.start) || !verses.some(verse => verse.number === h.end)) {
       throw new Error('Invalid chapter headings');
     }
     end = h.end;
@@ -48,7 +52,13 @@ export function partition(data: Chapter, mode: Division): Passage[] {
       heading, verses: verses.slice(startIndex, finishIndex + 1) });
   };
   const fallback = (startIndex: number, finishIndex: number) => {
-    for (let n = startIndex; n <= finishIndex; n += 5) add(n, Math.min(n + 4, finishIndex));
+    for (let n = startIndex; n <= finishIndex; n += 5) {
+      const endIndex = Math.min(n + 4, finishIndex);
+      const heading = mode === 'story'
+        ? { start: verses[n].number, end: verses[endIndex].number, title: `${data.book} ${data.chapter}:${verses[n].number}–${verses[endIndex].number}`, key: '' }
+        : undefined;
+      add(n, endIndex, heading);
+    }
   };
   let cursor = 0;
   if (mode === 'story') {

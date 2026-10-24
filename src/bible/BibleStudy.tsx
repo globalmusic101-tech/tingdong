@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { pinyin } from 'pinyin-pro';
 import { useLang } from '../lib/i18nContext';
-import type { Strings } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
@@ -14,11 +13,8 @@ import { BilingualMeaning, GrammarPanel, VocabularyPanel } from './LearningPanel
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
 
-function passageTitle(p: Passage, t: Strings, fallback: string): string {
-  // 시범 학습의 heading 키가 다른 책에서도 마가복음 제목을 가리킬 수 있습니다.
-  // 현재 책·장 범위를 사용해 화면에서 책이 섞이지 않게 합니다.
-  void p; void t;
-  return fallback;
+function passageTitle(p: Passage, fallback: string): string {
+  return p.heading?.title || fallback;
 }
 
 function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings }: {
@@ -274,7 +270,7 @@ export function BibleStudy() {
           {passages.map((p, i) => <button key={p.id} aria-current={p.id === passage.id ? 'step' : undefined}
             className={p.id === passage.id ? 'is-current' : ''} onClick={() => go(p)}>
             <span className="bible-passage-index">{String(i + 1).padStart(2, '0')}</span>
-            <span><strong>{passageTitle(p, t, passageRange(p))}</strong><small>{passageRange(p)}
+            <span><strong>{passageTitle(p, passageRange(p))}</strong><small>{passageRange(p)}
               {data.completed.includes(p.id) && <span className="bible-done"> · {t.bibleCompleted}</span>}</small></span>
           </button>)}
         </nav>
@@ -282,7 +278,7 @@ export function BibleStudy() {
       <article className="bible-reader">
         <header className="bible-passage-header">
           <p>{passageRange(passage)} <span>· {t.bibleVerseCount(passage.verses.length)}</span></p>
-          <h2>{passageTitle(passage, t, passageRange(passage))}</h2>
+          <h2>{passageTitle(passage, passageRange(passage))}</h2>
           <p className="bible-original-heading">{passage.heading
             ? <><span>{t.bibleSourceHeading} · </span><span lang="zh-CN">{passage.heading.title}</span></> : t.bibleFallback}</p>
         </header>
