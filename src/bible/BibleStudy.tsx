@@ -173,8 +173,13 @@ export function BibleStudy() {
   const passage = passages[passageIndex];
   const selectedKo = localBibles.ko.find(item => item.translation === selectedVersions.ko);
   const selectedEn = localBibles.en.find(item => item.translation === selectedVersions.en);
-  const baseMeanings = selectedBook === 'MRK' && selectedChapter === 1 ? verseMeanings : meaningsFor(selectedBook, selectedChapter);
-  const meanings = useMemo(() => mergeLocalBibles(selectedKo, selectedEn, baseMeanings), [selectedKo, selectedEn, baseMeanings]);
+  const usesMarkLocalVersions = selectedBook === 'MRK' && selectedChapter === 1;
+  const baseMeanings = usesMarkLocalVersions ? verseMeanings : meaningsFor(selectedBook, selectedChapter);
+  const meanings = useMemo(() => mergeLocalBibles(
+    usesMarkLocalVersions ? selectedKo : undefined,
+    usesMarkLocalVersions ? selectedEn : undefined,
+    baseMeanings,
+  ), [selectedKo, selectedEn, usesMarkLocalVersions, baseMeanings]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
