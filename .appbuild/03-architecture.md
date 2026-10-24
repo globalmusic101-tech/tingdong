@@ -415,6 +415,12 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 - `main.js`의 파일 선택 IPC만 원본 경로를 읽고 앱 전용 userData/private-bible에 저장합니다. preload는 검증 결과만 renderer에 전달하며 본문을 네트워크 요청하지 않습니다.
 - 파일이 없거나 검증에 실패하면 기본 한국어 성경 1910을 사용합니다. 저장소와 패키징 입력에는 본문 파일을 만들지 않습니다.
 
+## F18 architecture — 다중 로컬 판본과 BDB 변환
+
+- main IPC는 사용자가 선택한 `.bdb`를 macOS SQLite 실행 파일로 읽어 Mark 1의 45절만 추출하고, 언어·판본명·절을 JSON으로 userData 언어별 폴더에 저장합니다. 원본 경로와 본문은 renderer나 네트워크로 보내지 않습니다.
+- renderer는 언어별 로컬 판본 목록과 선택값을 별도로 보관하고, 선택 파일이 없으면 정적 기본 뜻으로 merge합니다.
+- `gapMs = 0`은 연속 읽기이며 storage validator와 playback timer가 허용합니다.
+
 # F16 architecture — 번역문 소스와 반복 진행
 
 - `src/bible/lessons.ts`의 `verseMeanings`는 앱 번역 결과가 아니라 고정된 기존 번역문 데이터입니다.

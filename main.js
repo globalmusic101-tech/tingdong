@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { exec, spawn } from 'child_process';
 import { pinyin } from 'pinyin-pro';
 import { registerTtsBridge } from './electron/ttsBridge.js';
-import { validateLocalKoreanBible } from './electron/localBible.js';
+import { convertBibleFile, validateLocalBible } from './electron/localBible.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -298,33 +298,42 @@ ipcMain.on('request-accessibility', () => {
   }
 });
 
-function localKoreanBiblePath() {
-  return path.join(app.getPath('userData'), 'private-bible', 'saehangul-mark1.json');
-}
-
-function readLocalKoreanBible() {
+function localBibleDir(language) { return path.join(app.getPath('userData'), 'private-bible', language); }
+function readLocalBibles(language) {
   try {
-    const file = localKoreanBiblePath();
-    if (!fs.existsSync(file)) return { ok: false, code: 'not-found' };
-    const result = validateLocalKoreanBible(JSON.parse(fs.readFileSync(file, 'utf8')));
-    return result.ok ? result : { ok: false, code: 'invalid', error: result.error };
-  } catch { return { ok: false, code: 'invalid', error: 'Unable to read the local Bible file' }; }
+    const dir = localBibleDir(language);
+    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(file => file.endsWith('.json')).map(file => path.join(dir, file)) : [];
+    // 이전 버전의 새한글성경 저장 위치도 한 번 읽어 새 구조로 이어갑니다.
+    const legacy = language === 'ko' ? path.join(app.getPath('userData'), 'private-bible', 'saehangul-mark1.json') : null;
+    if (legacy && fs.existsSync(legacy)) files.push(legacy);
+    const data = files.flatMap(file => {
+      try {
+        const value = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (!value.language) value.language = language;
+        const result = validateLocalBible(value, language);
+        return result.ok ? [result.data] : [];
+      } catch { return []; }
+    });
+    return { ok: true, data };
+  } catch { return { ok: false, code: 'invalid', error: 'Unable to read local Bible files' }; }
 }
 
-ipcMain.handle('bible:load-local-korean', () => readLocalKoreanBible());
-ipcMain.handle('bible:import-local-korean', async () => {
+ipcMain.handle('bible:load-local-bibles', () => ({ ko: readLocalBibles('ko'), en: readLocalBibles('en') }));
+ipcMain.handle('bible:import-local-bible', async (_event, language) => {
+  if (language !== 'ko' && language !== 'en') return { ok: false, code: 'invalid', error: 'Unsupported language' };
   const picked = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile'], filters: [{ name: 'Tingdong Bible JSON', extensions: ['json'] }],
+    properties: ['openFile'], filters: [{ name: 'Bible database or JSON', extensions: ['bdb', 'db', 'sqlite', 'json'] }],
   });
   if (picked.canceled || !picked.filePaths[0]) return { ok: false, code: 'cancelled' };
   try {
-    const result = validateLocalKoreanBible(JSON.parse(fs.readFileSync(picked.filePaths[0], 'utf8')));
+    const result = await convertBibleFile(picked.filePaths[0], language);
     if (!result.ok) return { ok: false, code: 'invalid', error: result.error };
-    const dir = path.dirname(localKoreanBiblePath());
+    const dir = localBibleDir(language);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const temporary = `${localKoreanBiblePath()}.tmp`;
+    const file = path.join(dir, `${result.data.translation}.json`);
+    const temporary = `${file}.tmp`;
     fs.writeFileSync(temporary, JSON.stringify(result.data), { encoding: 'utf8', mode: 0o600 });
-    fs.renameSync(temporary, localKoreanBiblePath());
+    fs.renameSync(temporary, file);
     return result;
   } catch { return { ok: false, code: 'invalid', error: 'The selected file is not valid JSON' }; }
 });

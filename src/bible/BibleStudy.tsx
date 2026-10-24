@@ -9,7 +9,7 @@ import { chapter, passagesFor, sentencesFor, type Division, type Passage } from 
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
-import { mergeLocalKoreanBible, validateLocalKoreanBible, type LocalKoreanBible } from './localSource';
+import { mergeLocalBibles, validateLocalBible, type LocalBible } from './localSource';
 import { BilingualMeaning, GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
@@ -107,7 +107,7 @@ function StudySession({ passage, data, meanings, onCursor, onStopReady, onSettin
           <option value={3}>{t.bibleTimes(3)}</option><option value={5}>{t.bibleTimes(5)}</option>
         </select></label>
         <label>{t.bibleGap}<select value={data.settings.gapMs} onChange={e => onSettings({ gapMs: Number(e.target.value) })}>
-          {[500, 1000, 2000, 3000].map(ms => <option value={ms} key={ms}>{t.bibleSeconds(ms / 1000)}</option>)}
+          <option value={0}>{t.bibleContinuous}</option>{[500, 1000, 2000, 3000].map(ms => <option value={ms} key={ms}>{t.bibleSeconds(ms / 1000)}</option>)}
         </select></label>
         <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
           onSettings({ engine: e.target.value as 'local' | 'edge' });
@@ -150,13 +150,16 @@ export function BibleStudy() {
   const [loaded] = useState(loadStudy);
   const [data, setData] = useState(loaded.data);
   const [storageFailed, setStorageFailed] = useState(loaded.failed);
-  const [localBible, setLocalBible] = useState<LocalKoreanBible | null>(null);
+  const [localBibles, setLocalBibles] = useState<{ ko: LocalBible[]; en: LocalBible[] }>({ ko: [], en: [] });
+  const [selectedVersions, setSelectedVersions] = useState({ ko: 'default', en: 'default' });
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const passages = passagesFor(data.mode);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
   const passage = passages[passageIndex];
-  const meanings = useMemo(() => localBible ? mergeLocalKoreanBible(localBible) : verseMeanings, [localBible]);
+  const selectedKo = localBibles.ko.find(item => item.translation === selectedVersions.ko);
+  const selectedEn = localBibles.en.find(item => item.translation === selectedVersions.en);
+  const meanings = useMemo(() => mergeLocalBibles(selectedKo, selectedEn), [selectedKo, selectedEn]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
@@ -167,23 +170,31 @@ export function BibleStudy() {
   };
   useEffect(() => { if (!saveStudy(data)) setStorageFailed(true); }, [data]);
   useEffect(() => {
-    const load = window.electronAPI?.loadLocalKoreanBible;
+    const load = window.electronAPI?.loadLocalBibles;
     if (!load) return;
     void load().then(result => {
-      if (!result?.ok || !result.data) return;
-      const checked = validateLocalKoreanBible(result.data);
-      if (checked.ok) setLocalBible(checked.data);
+      const ko = (result.ko?.data ?? []).flatMap(item => { const checked = validateLocalBible(item, 'ko'); return checked.ok ? [checked.data] : []; });
+      const en = (result.en?.data ?? []).flatMap(item => { const checked = validateLocalBible(item, 'en'); return checked.ok ? [checked.data] : []; });
+      setLocalBibles({ ko, en });
+      try {
+        const saved = JSON.parse(localStorage.getItem('tingdong.bible.versions') ?? '{}');
+        const next = { ko: ko.some(item => item.translation === saved.ko) ? saved.ko : 'default', en: en.some(item => item.translation === saved.en) ? saved.en : 'default' };
+        if ((saved.ko && next.ko === 'default') || (saved.en && next.en === 'default')) setLocalBibleMessage(t.bibleLocalBibleFallback);
+        setSelectedVersions(next);
+      } catch { /* 기본 판본을 사용합니다 */ }
     });
-  }, []);
-  const importLocalBible = useCallback(async () => {
-    const result = await window.electronAPI?.importLocalKoreanBible?.();
+  }, [t]);
+  const importLocalBible = useCallback(async (language: 'ko' | 'en') => {
+    const result = await window.electronAPI?.importLocalBible?.(language);
     if (!result || result.code === 'cancelled') return;
     if (!result.ok || !result.data) { setLocalBibleMessage(result.error ?? t.bibleLocalBibleInvalid); return; }
-    const checked = validateLocalKoreanBible(result.data);
+    const checked = validateLocalBible(result.data, language);
     if (!checked.ok) { setLocalBibleMessage(t.bibleLocalBibleInvalid); return; }
-    setLocalBible(checked.data);
+    setLocalBibles(current => ({ ...current, [language]: [...current[language], checked.data] }));
+    setSelectedVersions(current => ({ ...current, [language]: checked.data.translation }));
+    localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, [language]: checked.data.translation }));
     setLocalBibleMessage(null);
-  }, [t]);
+  }, [selectedVersions, t]);
   const go = (p: Passage, mark = false) => {
     stopRef.current?.();
     if (p.id === passage.id) return;
@@ -267,8 +278,13 @@ export function BibleStudy() {
         </footer>
         <details className="bible-about"><summary>{t.bibleAbout}</summary><p>{t.bibleAboutText}</p><p>{t.biblePinyinNotice}</p>
           <div className="bible-local-source"><strong>{t.bibleLocalBibleTitle}</strong><p>{t.bibleLocalBibleDescription}</p>
-            <button onClick={() => void importLocalBible()} disabled={!window.electronAPI?.importLocalKoreanBible}>{t.bibleLocalBibleImport}</button>
-            <p>{localBible ? t.bibleLocalBibleReady(localBible.name) : t.bibleLocalBibleMissing}</p>
+            <div className="bible-version-row"><label>{t.bibleKorean}<select value={selectedVersions.ko} onChange={e => { const value = e.target.value; setSelectedVersions(v => ({ ...v, ko: value })); localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, ko: value })); }}>
+              <option value="default">{t.bibleDefaultVersion1910}</option>{localBibles.ko.map(item => <option key={item.translation} value={item.translation}>{item.name}</option>)}
+            </select></label><button onClick={() => void importLocalBible('ko')} disabled={!window.electronAPI?.importLocalBible}>{t.bibleLocalBibleImportKo}</button></div>
+            <div className="bible-version-row"><label>{t.bibleEnglish}<select value={selectedVersions.en} onChange={e => { const value = e.target.value; setSelectedVersions(v => ({ ...v, en: value })); localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, en: value })); }}>
+              <option value="default">{t.bibleDefaultVersionWeb}</option>{localBibles.en.map(item => <option key={item.translation} value={item.translation}>{item.name}</option>)}
+            </select></label><button onClick={() => void importLocalBible('en')} disabled={!window.electronAPI?.importLocalBible}>{t.bibleLocalBibleImportEn}</button></div>
+            {(selectedVersions.ko !== 'default' || selectedVersions.en !== 'default') && <p>{t.bibleLocalBibleReady([selectedKo?.name, selectedEn?.name].filter(Boolean).join(' · '))}</p>}
             {localBibleMessage && <p className="bible-alert" role="alert">{localBibleMessage}</p>}
           </div>
           <p><a href={chapter.source} target="_blank" rel="noreferrer">{t.bibleContentSource}</a> · <a href="https://ebible.org/kor/MRK01.htm" target="_blank" rel="noreferrer">Korean Bible 1910</a> · <a href="https://ebible.org/eng-web/MRK01.htm" target="_blank" rel="noreferrer">World English Bible Classic</a> · <a href="https://ebible.org/cmn-cu89s/copyright.htm" target="_blank" rel="noreferrer">{t.bibleLicense}</a></p>

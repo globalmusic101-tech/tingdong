@@ -207,3 +207,10 @@ E4: 2.1.0 실패와 Python 7.3.1 성공을 별도 기록하고, v2 JS 호환 어
 1. L1: 새한글성경 JSON 형식과 정확한 절 집합을 renderer/main 양쪽에서 검증합니다.
 2. L2: Electron 파일 선택·userData 저장·재실행 로드 IPC와 기본 판본 fallback을 검사합니다.
 3. L3: i18n 문구와 로컬 상태 UI를 추가하고 test/build/check:i18n/lint/diff/app:build를 실행합니다.
+
+# F18 작업 — 다중 판본과 BDB 자동 변환
+
+1. M1: 한국어·영어 언어별 로컬 판본 목록, 선택값과 기본 fallback을 구현합니다.
+2. M2: `.bdb`/JSON 선택 IPC가 Mark 1 45절을 변환·검증하고 userData에만 원자 저장하도록 합니다.
+3. M3: 양언어 드롭다운과 파일 없음 안내를 추가하고 영어/한국어 UI에서 확인합니다.
+4. M4: gap 0 연속 읽기와 저장 validator, BDB 변환·잘못된 파일·누락 fallback 테스트를 실행합니다.

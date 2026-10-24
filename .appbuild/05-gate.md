@@ -159,3 +159,16 @@ F16 구현 완료로 보고하지 않습니다.
 | L05 | 전체 검사와 app:build 실제 결과 | PENDING |
 
 **현재: F17 기획 반영 / 구현·독립 검증 PENDING.**
+
+## F18 독립 게이트 — 로컬 판본 선택과 BDB 자동 변환
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| M01 | 한국어·영어 `.bdb` 및 JSON의 Mark 1 45절 자동 변환·검증 | PENDING |
+| M02 | 언어별 다중 판본 저장·드롭다운 선택·재실행 복원 | PENDING |
+| M03 | 선택 파일이 없거나 삭제된 경우 기본 판본 fallback과 사용자 안내 | PENDING |
+| M04 | 원본·본문이 저장소/패키지/네트워크에 포함되지 않음 | PENDING |
+| M05 | `연속` 간격 0의 반복·다음 문장 진행과 기존 간격 회귀 | PENDING |
+| M06 | test/build/check:i18n/lint/diff/app:build 실제 결과 | PENDING |
+
+**현재: F18 기획 반영 / 구현·독립 검증 PENDING.**
