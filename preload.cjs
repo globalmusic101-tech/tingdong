@@ -27,4 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   importLocalBible: (language) => ipcRenderer.invoke('bible:import-local-bible', language),
   loadLocalBibles: () => ipcRenderer.invoke('bible:load-local-bibles')
+  ,speakChinese: (text, rate) => ipcRenderer.invoke('device-tts:speak', { text, rate })
+  ,stopChinese: () => ipcRenderer.send('device-tts:stop')
+  ,onChineseEnded: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('device-tts:ended', listener);
+    return () => ipcRenderer.removeListener('device-tts:ended', listener);
+  }
+  ,onChineseError: (callback) => {
+    const listener = (_event, reason) => callback(reason);
+    ipcRenderer.on('device-tts:error', listener);
+    return () => ipcRenderer.removeListener('device-tts:error', listener);
+  }
 });

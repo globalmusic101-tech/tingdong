@@ -48,6 +48,7 @@ let popupWindow  = null;
 let tray         = null;
 let isPopupPinned = false;
 let isQuitting    = false;
+let nativeSpeechProcess = null;
 
 const getSelectionSrcPath = path.join(__dirname, 'GetSelection.swift');
 const getSelectionBinPath = path.join(__dirname, 'GetSelection');
@@ -319,6 +320,33 @@ function readLocalBibles(language) {
 }
 
 ipcMain.handle('bible:load-local-bibles', () => ({ ko: readLocalBibles('ko'), en: readLocalBibles('en') }));
+ipcMain.handle('device-tts:speak', async (event, { text, rate }) => {
+  if (process.platform !== 'darwin' || typeof text !== 'string' || !text.trim()) {
+    return { ok: false, error: '기기 음성을 사용할 수 없습니다' };
+  }
+  if (nativeSpeechProcess) nativeSpeechProcess.kill('SIGTERM');
+  const wordsPerMinute = Math.max(80, Math.min(500, Math.round(200 * Number(rate || 1))));
+  const child = spawn('/usr/bin/say', ['-v', 'Tingting', '-r', String(wordsPerMinute), text], { stdio: 'ignore' });
+  nativeSpeechProcess = child;
+  child.once('error', (error) => {
+    if (nativeSpeechProcess !== child) return;
+    nativeSpeechProcess = null;
+    event.sender.send('device-tts:error', error.message || '기기 음성 실행 실패');
+  });
+  child.once('close', (code, signal) => {
+    if (nativeSpeechProcess !== child) return;
+    nativeSpeechProcess = null;
+    event.sender.send(code === 0 && !signal ? 'device-tts:ended' : 'device-tts:error',
+      code === 0 && !signal ? undefined : '기기 음성이 중단되었습니다');
+  });
+  return { ok: true };
+});
+ipcMain.on('device-tts:stop', () => {
+  if (nativeSpeechProcess) {
+    nativeSpeechProcess.kill('SIGTERM');
+    nativeSpeechProcess = null;
+  }
+});
 ipcMain.handle('bible:import-local-bible', async (_event, language) => {
   if (language !== 'ko' && language !== 'en') return { ok: false, code: 'invalid', error: 'Unsupported language' };
   const picked = await dialog.showOpenDialog(mainWindow, {

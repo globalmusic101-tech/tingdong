@@ -25,6 +25,19 @@ export function speakLocal(
   onStart: () => void = () => {},
 ): void {
   if (!isAvailable()) { onError('speech-unavailable'); return; }
+  const api = window.electronAPI;
+  const native = api?.speakChinese;
+  if (native && api.stopChinese && api.onChineseEnded && api.onChineseError) {
+    api.stopChinese();
+    const removeEnded = api.onChineseEnded(() => { remove(); onEnd(); });
+    const removeError = api.onChineseError((reason) => { remove(); onError(reason || 'speech-error'); });
+    const remove = () => { removeEnded(); removeError(); };
+    void native(text, rate).then((result) => {
+      if (!result.ok) { remove(); onError(result.error || 'speech-error'); return; }
+      onStart();
+    }).catch((error) => { remove(); onError(error instanceof Error ? error.message : String(error)); });
+    return;
+  }
   window.speechSynthesis.cancel();
 
   const voice = pickChineseVoice();
@@ -54,5 +67,6 @@ export function speakLocal(
 }
 
 export function cancelLocal(): void {
+  window.electronAPI?.stopChinese?.();
   if (isAvailable()) window.speechSynthesis.cancel();
 }
