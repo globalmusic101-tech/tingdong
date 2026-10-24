@@ -67,6 +67,8 @@ const en = {
   biblePracticeExample: 'Practice example · written for this app',
   bibleNoWords: 'No vocabulary notes are available for this passage yet.',
   bibleNoGrammar: 'No grammar notes are available for this passage yet.',
+  bibleListenText: 'Listen',
+  bibleListeningText: 'Listening…',
 
   audioFailed: (reason: string) => `Audio failed. Select a sentence to try again. (${reason})`,
   navBible: 'Bible study',
@@ -429,6 +431,8 @@ const ko: Strings = {
   biblePracticeExample: '연습 예문 · 앱에서 작성',
   bibleNoWords: '이 단락의 단어 해설은 아직 준비되지 않았습니다.',
   bibleNoGrammar: '이 단락의 문법 해설은 아직 준비되지 않았습니다.',
+  bibleListenText: '듣기',
+  bibleListeningText: '듣는 중…',
 
   audioFailed: (reason: string) => `음성을 재생하지 못했습니다. 문장을 다시 선택해 주세요. (${reason})`,
   navBible: '성경 공부',

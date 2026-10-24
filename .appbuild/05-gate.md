@@ -249,3 +249,14 @@ F16 구현 완료로 보고하지 않습니다.
 | T04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 140개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F25 기획·구현·독립 검증 완료.**
+
+## F26 독립 게이트 — 단어·문법 학습 음성
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| U01 | 단어·문법 카드 중국어 텍스트의 재생 버튼과 공유 재생기 | PASS — 단어·본문 표현·문법 구성·연습 문장에 학습 영역별 공유 `SentencePlayer` 연결 |
+| U02 | 성별·말투 선택 없이 기본 음성 사용, 다른 카드 재생 시 이전 음성 중지 | PASS — `DEFAULT_SETTINGS` 고정 사용 및 새 카드 재생 전 기존 `SentencePlayer` 중지 경로 확인 |
+| U03 | Edge 실패 시 기존 기기 음성 폴백 및 학습 카드 회귀 | PASS — 기존 `SentencePlayer` 폴백·취소 테스트와 전체 학습 테스트 통과 |
+| U04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 140개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F26 기획·구현·독립 검증 완료.**

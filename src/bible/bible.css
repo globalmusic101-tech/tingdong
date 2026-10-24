@@ -117,6 +117,10 @@
 .bible-lesson-reference { color: #839084; font-size: 11px; white-space: nowrap; }
 .bible-context-label { color: #819085; font-size: 11px; margin: 15px 0 5px; }
 .bible-learning-card blockquote { padding: 9px 13px; border-left: 3px solid #b7ceba; background: #eef4ed; font-family: 'PingFang SC', sans-serif; font-size: 20px; line-height: 1.85; }
+.bible-audio-text { display: flex; align-items: center; gap: 10px; }
+.bible-audio-text > :first-child { flex: 1; min-width: 0; }
+.bible-listen-text { flex: 0 0 auto; padding: 5px 9px; color: #356a52; border-color: #b8cdbb; font-size: 11px; white-space: nowrap; }
+.bible-listen-text[aria-pressed="true"] { background: #e1eee2; border-color: #82a98e; }
 .bible-learning-card .bible-meanings { margin: 18px 0; }
 .bible-word-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .bible-word-actions button[aria-pressed="true"] { background: #e1eee2; border-color: #98b89c; }
