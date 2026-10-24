@@ -18,6 +18,6 @@ export function validateLocalBible(value: unknown, language: BibleLanguage): { o
   return { ok: true, data: input as LocalBible };
 }
 
-export function mergeLocalBibles(ko: LocalBible | undefined, en: LocalBible | undefined): Record<number, Bilingual> {
-  return Object.fromEntries(Object.entries(verseMeanings).map(([number, meaning]) => [Number(number), { ko: ko?.verses[number] ?? meaning.ko, en: en?.verses[number] ?? meaning.en }]));
+export function mergeLocalBibles(ko: LocalBible | undefined, en: LocalBible | undefined, base = verseMeanings): Record<number, Bilingual> {
+  return Object.fromEntries(Object.entries(base).map(([number, meaning]) => [Number(number), { ko: ko?.verses[number] ?? meaning.ko, en: en?.verses[number] ?? meaning.en }]));
 }

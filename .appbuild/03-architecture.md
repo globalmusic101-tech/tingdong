@@ -435,3 +435,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 - `StudySettings.repeats`의 유한 값은 `1 | 3 | 5`, 무한 값은 `0`입니다. 저장 validator도 이 집합만 허용합니다.
 - `StudyPlayback`의 repeat 모드는 유한 횟수를 채우면 같은 모드를 유지한 채 다음 문장으로 index를 이동하고 count를 0부터 다시 셉니다.
   마지막 문장에서는 `stop()`으로 종료합니다. 무한 반복은 현재 문장에 남습니다. generation으로 정지·선택·언마운트 뒤의 대기 타이머를 무효화합니다.
+
+## F20 architecture — 66권 데이터 카탈로그
+
+`src/bible/bible-full.json`은 eBible Public Domain CUV 간체·한국어 성경 1910·WEB Classic의 책·장·절 병렬 데이터입니다. `bibleBooks`와 `chapterFor`가 책·장 선택을 제공하고, 기존 `partition`과 `StudyPlayback`을 재사용합니다. 학습 자료는 기존 마가복음 1장 데이터만 범위 필터로 표시합니다.

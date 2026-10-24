@@ -5,7 +5,7 @@ import type { Strings } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
-import { chapter, passagesFor, sentencesFor, type Division, type Passage } from './model';
+import { chapterFor, bibleBooks, meaningsFor, partition, sentencesFor, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
@@ -19,8 +19,8 @@ function passageTitle(p: Passage, t: Strings): string {
   return typeof translated === 'string' ? translated : t.biblePassageRange(p.start, p.end);
 }
 
-function StudySession({ passage, data, meanings, onCursor, onStopReady, onSettings }: {
-  passage: Passage; data: StudyData; meanings: typeof verseMeanings; onCursor: (id: string) => void;
+function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings }: {
+  passage: Passage; data: StudyData; meanings: typeof verseMeanings; activeChapter: Chapter; onCursor: (id: string) => void;
   onStopReady: (stop: (() => void) | null) => void; onSettings: (patch: Partial<StudySettings>) => void;
 }) {
   const { t } = useLang();
@@ -136,7 +136,7 @@ function StudySession({ passage, data, meanings, onCursor, onStopReady, onSettin
         <span className="bible-verse-number" aria-hidden="true">{verse.number}</span>
         <div className="bible-sentences">{lines.map((line, i) => line.verse !== verse.number ? null :
           <button key={line.id} data-sentence={line.id} className={`bible-sentence ${i === playback.index ? 'is-selected' : ''} ${i === playback.index && busy ? 'is-active' : ''}`}
-            aria-label={`${chapter.chapter}:${verse.number} ${line.text}`} aria-pressed={i === playback.index && busy}
+            aria-label={`${activeChapter.chapter}:${verse.number} ${line.text}`} aria-pressed={i === playback.index && busy}
             onClick={() => controller.current?.select(i)}>
             {data.settings.pinyin ? readings[i].map(({ char, sound }, n) => sound
               ? <ruby key={n}>{char}<rt>{sound}</rt></ruby> : <span key={n}>{char}</span>) : line.text}
@@ -157,14 +157,20 @@ export function BibleStudy() {
   const [storageFailed, setStorageFailed] = useState(loaded.failed);
   const [localBibles, setLocalBibles] = useState<{ ko: LocalBible[]; en: LocalBible[] }>({ ko: [], en: [] });
   const [selectedVersions, setSelectedVersions] = useState({ ko: 'default', en: 'default' });
+  const [selectedBook, setSelectedBook] = useState('MRK');
+  const [selectedChapter, setSelectedChapter] = useState(1);
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
-  const passages = passagesFor(data.mode);
+  const activeChapter = chapterFor(selectedBook, selectedChapter);
+  const activeBookName = selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook);
+  const passageRange = (p: Passage) => `${activeBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
+  const passages = partition(activeChapter, data.mode);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
   const passage = passages[passageIndex];
   const selectedKo = localBibles.ko.find(item => item.translation === selectedVersions.ko);
   const selectedEn = localBibles.en.find(item => item.translation === selectedVersions.en);
-  const meanings = useMemo(() => mergeLocalBibles(selectedKo, selectedEn), [selectedKo, selectedEn]);
+  const baseMeanings = selectedBook === 'MRK' && selectedChapter === 1 ? verseMeanings : meaningsFor(selectedBook, selectedChapter);
+  const meanings = useMemo(() => mergeLocalBibles(selectedKo, selectedEn, baseMeanings), [selectedKo, selectedEn, baseMeanings]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
@@ -209,13 +215,21 @@ export function BibleStudy() {
   const divide = (mode: Division) => {
     stopRef.current?.();
     const verse = Number(data.sentenceId.split(':')[0]);
-    const next = passagesFor(mode).find(p => p.start <= verse && p.end >= verse) ?? passagesFor(mode)[0];
+    const next = partition(activeChapter, mode).find(p => p.start <= verse && p.end >= verse) ?? partition(activeChapter, mode)[0];
     setData(d => ({ ...d, mode, passageId: next.id }));
   };
   const toggleComplete = () => setData(d => ({ ...d, completed: completed
     ? d.completed.filter(id => id !== passage.id) : [...d.completed, passage.id] }));
   const doneCount = passages.filter(p => data.completed.includes(p.id)).length;
-  const lesson = lessonFor(passage);
+  const lesson = selectedBook === 'MRK' && selectedChapter === 1 ? lessonFor(passage) : { words: [], grammar: [] };
+  const selectChapter = (book: string, number: number) => {
+    stopRef.current?.();
+    setSelectedBook(book);
+    setSelectedChapter(number);
+    const next = chapterFor(book, number);
+    const first = partition(next, data.mode)[0];
+    setData(d => ({ ...d, passageId: first.id, sentenceId: sentencesFor(first)[0].id }));
+  };
   const switchView = (view: LearningView) => {
     stopRef.current?.();
     setData(d => ({ ...d, learningView: view }));
@@ -238,6 +252,12 @@ export function BibleStudy() {
     <div className="bible-layout">
       <aside className="bible-sidebar">
         <h2>{t.bibleLibrary}</h2>
+        <label className="bible-division">{t.bibleBookSelect}<select value={selectedBook} onChange={e => selectChapter(e.target.value, 1)}>
+          {bibleBooks.map(book => <option key={book.id} value={book.id}>{book.name}</option>)}
+        </select></label>
+        <label className="bible-division">{t.bibleChapterSelect}<select value={selectedChapter} onChange={e => selectChapter(selectedBook, Number(e.target.value))}>
+          {(bibleBooks.find(book => book.id === selectedBook)?.chapters ?? []).map(item => <option key={item.chapter} value={item.chapter}>{t.bibleChapter(item.chapter)}</option>)}
+        </select></label>
         <label className="bible-division">{t.bibleDivision}<select value={data.mode} onChange={e => divide(e.target.value as Division)}>
           <option value="story">{t.bibleStory}</option><option value="five">{t.bibleFive}</option>
         </select></label>
@@ -246,14 +266,14 @@ export function BibleStudy() {
           {passages.map((p, i) => <button key={p.id} aria-current={p.id === passage.id ? 'step' : undefined}
             className={p.id === passage.id ? 'is-current' : ''} onClick={() => go(p)}>
             <span className="bible-passage-index">{String(i + 1).padStart(2, '0')}</span>
-            <span><strong>{passageTitle(p, t)}</strong><small>{t.biblePassageRange(p.start, p.end)}
+            <span><strong>{passageTitle(p, t)}</strong><small>{passageRange(p)}
               {data.completed.includes(p.id) && <span className="bible-done"> · {t.bibleCompleted}</span>}</small></span>
           </button>)}
         </nav>
       </aside>
       <article className="bible-reader">
         <header className="bible-passage-header">
-          <p>{t.biblePassageRange(passage.start, passage.end)} <span>· {t.bibleVerseCount(passage.verses.length)}</span></p>
+          <p>{passageRange(passage)} <span>· {t.bibleVerseCount(passage.verses.length)}</span></p>
           <h2>{passageTitle(passage, t)}</h2>
           <p className="bible-original-heading">{passage.heading
             ? <><span>{t.bibleSourceHeading} · </span><span lang="zh-CN">{passage.heading.title}</span></> : t.bibleFallback}</p>
@@ -265,7 +285,7 @@ export function BibleStudy() {
         </nav>
         <p className="bible-meaning-note">{t.bibleMeaningNote}</p>
         <div hidden={data.learningView !== 'read'}>
-          <StudySession key={`${data.mode}:${passage.id}`} passage={passage} data={data} meanings={meanings} onCursor={cursor}
+          <StudySession key={`${data.mode}:${passage.id}`} passage={passage} data={data} meanings={meanings} activeChapter={activeChapter} onCursor={cursor}
             onStopReady={stopReady} onSettings={settings} />
         </div>
         {data.learningView === 'words' && <VocabularyPanel key={passage.id} items={lesson.words} reviews={data.wordReviews} onReview={reviewWord} />}
@@ -292,7 +312,7 @@ export function BibleStudy() {
             {(selectedVersions.ko !== 'default' || selectedVersions.en !== 'default') && <p>{t.bibleLocalBibleReady([selectedKo?.name, selectedEn?.name].filter(Boolean).join(' · '))}</p>}
             {localBibleMessage && <p className="bible-alert" role="alert">{localBibleMessage}</p>}
           </div>
-          <p><a href={chapter.source} target="_blank" rel="noreferrer">{t.bibleContentSource}</a> · <a href="https://ebible.org/kor/MRK01.htm" target="_blank" rel="noreferrer">Korean Bible 1910</a> · <a href="https://ebible.org/eng-web/MRK01.htm" target="_blank" rel="noreferrer">World English Bible Classic</a> · <a href="https://ebible.org/cmn-cu89s/copyright.htm" target="_blank" rel="noreferrer">{t.bibleLicense}</a></p>
+          <p><a href={activeChapter.source} target="_blank" rel="noreferrer">{t.bibleContentSource}</a> · <a href="https://ebible.org/kor/MRK01.htm" target="_blank" rel="noreferrer">Korean Bible 1910</a> · <a href="https://ebible.org/eng-web/MRK01.htm" target="_blank" rel="noreferrer">World English Bible Classic</a> · <a href="https://ebible.org/cmn-cu89s/copyright.htm" target="_blank" rel="noreferrer">{t.bibleLicense}</a></p>
         </details>
         <p className="bible-pinyin-footnote">{t.biblePinyinNotice}</p>
       </article>

@@ -182,3 +182,15 @@ F16 구현 완료로 보고하지 않습니다.
 | N03 | 추가 장의 저장·단락 진행·스크롤·ko/en UI 회귀 | PENDING |
 
 **현재: F19 기획 반영 / 구현·독립 검증 PENDING.**
+
+## F20 독립 게이트 — Public Domain 66권 본문
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| O01 | 66권·장·절 수와 CUV/KOR1910/WEB 출처·Public Domain 확인 | PENDING |
+| O02 | 책·장 선택, 본문·양언어 뜻·단락·반복·자동 스크롤 연결 | PENDING |
+| O03 | 마가복음 1장 학습 카드 유지 및 다른 장의 자료 없음 안내 | PENDING |
+| O04 | 저장소·패키지에 저작권 판본이 없고 로컬 판본 경계 유지 | PENDING |
+| O05 | 전체 테스트/build/check:i18n/lint/diff/app:build 실제 결과 | PENDING |
+
+**현재: F20 기획 반영 / 구현·독립 검증 PENDING.**

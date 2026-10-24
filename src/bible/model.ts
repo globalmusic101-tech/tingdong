@@ -1,5 +1,7 @@
 import { splitSentences } from '../prompter/lib/splitSentences';
+import type { Bilingual } from './lessons';
 import raw from './mark1.json';
+import fullRaw from './bible-full.json';
 
 export type Division = 'story' | 'five';
 export type Verse = { number: number; text: string };
@@ -8,11 +10,27 @@ export type Chapter = { version: string; book: string; chapter: number; source: 
 export type Passage = { id: string; start: number; end: number; heading?: Heading; verses: Verse[] };
 export type StudySentence = { id: string; verse: number; text: string };
 export const chapter: Chapter = raw;
+type FullBible = { version: string; books: { id: string; name: string; chapters: { chapter: number; verses: { number: number; zh: string; ko: string; en: string }[] }[] }[] };
+export const bibleBooks = (fullRaw as FullBible).books;
+export function chapterFor(bookId: string, number: number): Chapter {
+  if (bookId === chapter.book && number === chapter.chapter) return chapter;
+  const book = bibleBooks.find(item => item.id === bookId);
+  const found = book?.chapters.find(item => item.chapter === number);
+  if (!book || !found) return chapter;
+  return { version: 'cmn-cu89s', book: book.id, chapter: found.chapter, source: `https://ebible.org/cmn-cu89s/${book.id}${String(found.chapter).padStart(2, '0')}.htm`,
+    verses: found.verses.map(({ number: verse, zh }) => ({ number: verse, text: zh })), headings: [] };
+}
+export function meaningsFor(bookId: string, number: number): Record<number, Bilingual> {
+  const book = bibleBooks.find(item => item.id === bookId);
+  const found = book?.chapters.find(item => item.chapter === number);
+  if (!found) return {};
+  return Object.fromEntries(found.verses.map(verse => [verse.number, { ko: verse.ko, en: verse.en }]));
+}
 
 /** 누락된 절을 정상 단락처럼 보여주지 않습니다. */
 export function partition(data: Chapter, mode: Division): Passage[] {
   const { verses, headings } = data;
-  if (!verses.length || verses.some((v, i) => v.number !== i + 1 || !v.text.trim())) {
+  if (!verses.length || verses.some((v, i) => (i > 0 && v.number <= verses[i - 1].number) || !v.text.trim())) {
     throw new Error('Invalid chapter verses');
   }
   let end = 0;
@@ -23,22 +41,28 @@ export function partition(data: Chapter, mode: Division): Passage[] {
     end = h.end;
   }
   const result: Passage[] = [];
-  const add = (start: number, finish: number, heading?: Heading) => {
+  const add = (startIndex: number, finishIndex: number, heading?: Heading) => {
+    const start = verses[startIndex].number;
+    const finish = verses[finishIndex].number;
     result.push({ id: `${data.version}:${data.book}:${data.chapter}:${start}-${finish}`, start, end: finish,
-      heading, verses: verses.slice(start - 1, finish) });
+      heading, verses: verses.slice(startIndex, finishIndex + 1) });
   };
-  const fallback = (start: number, finish: number) => {
-    for (let n = start; n <= finish; n += 5) add(n, Math.min(n + 4, finish));
+  const fallback = (startIndex: number, finishIndex: number) => {
+    for (let n = startIndex; n <= finishIndex; n += 5) add(n, Math.min(n + 4, finishIndex));
   };
-  let cursor = 1;
+  let cursor = 0;
   if (mode === 'story') {
     for (const h of headings) {
-      fallback(cursor, h.start - 1);
-      add(h.start, h.end, h);
-      cursor = h.end + 1;
+      const startIndex = verses.findIndex(v => v.number >= h.start);
+      const nextIndex = verses.findIndex(v => v.number > h.end);
+      const endIndex = nextIndex === -1 ? verses.length - 1 : nextIndex - 1;
+      if (startIndex < cursor || endIndex < startIndex) throw new Error('Invalid chapter headings');
+      if (startIndex > cursor) fallback(cursor, startIndex - 1);
+      add(startIndex, endIndex, h);
+      cursor = endIndex + 1;
     }
   }
-  fallback(cursor, verses.length);
+  if (cursor < verses.length) fallback(cursor, verses.length - 1);
   return result;
 }
 
