@@ -96,6 +96,18 @@
 .bible-learning-tabs { display: flex; gap: 7px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid #e3e9e2; }
 .bible-learning-tabs button[aria-pressed="true"] { background: #e7f0e9; border-color: #9bb9a4; color: #275940; font-weight: 650; }
 .bible-meaning-note { color: #728177; font-size: 11px; margin: 12px 0 20px; line-height: 1.6; }
+.bible-progress-overview { max-width: 1340px; margin: 0 auto 24px; padding: 18px 20px; border: 1px solid #dfe7df; border-radius: 12px; background: #fbfcfa; }
+.bible-progress-overview-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.bible-progress-overview-heading h2 { margin: 0; font-size: 18px; }
+.bible-progress-overview-heading p { margin: 5px 0 0; color: #718077; font-size: 12px; }
+.bible-progress-overview-heading > span { color: #587663; font-size: 12px; }
+.bible-progress-table-wrap { max-height: 310px; overflow: auto; margin-top: 14px; border: 1px solid #e1e8e1; border-radius: 8px; }
+.bible-progress-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.bible-progress-table-wrap th, .bible-progress-table-wrap td { padding: 8px 10px; border-bottom: 1px solid #edf1ed; text-align: right; white-space: nowrap; }
+.bible-progress-table-wrap thead th { position: sticky; top: 0; background: #f1f6f1; color: #617468; font-size: 11px; }
+.bible-progress-table-wrap th:first-child, .bible-progress-table-wrap td:first-child { text-align: left; }
+.bible-progress-table-wrap tbody tr.is-current { background: #e7f0e9; color: #275940; }
+.bible-progress-table-wrap tbody tr:last-child th, .bible-progress-table-wrap tbody tr:last-child td { border-bottom: 0; }
 .bible-primary-controls .bible-checkbox + .bible-checkbox { margin-left: 0; }
 .bible-meanings { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; margin: 9px 12px 8px; }
 .bible-meanings > div { border-left: 2px solid #dce8df; padding-left: 12px; min-width: 0; }

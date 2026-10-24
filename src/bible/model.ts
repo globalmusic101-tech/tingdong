@@ -85,3 +85,5 @@ export function sentencesFor(passage: Passage): StudySentence[] {
 export const storyPassages = partition(chapter, 'story');
 export const fivePassages = partition(chapter, 'five');
 export const passagesFor = (mode: Division) => mode === 'story' ? storyPassages : fivePassages;
+export const passagesForAllBooks = (mode: Division) => bibleBooks.flatMap(book => book.chapters.flatMap(item =>
+  partition(chapterFor(book.id, item.chapter), mode)));

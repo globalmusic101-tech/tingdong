@@ -1,4 +1,4 @@
-import { passagesFor, sentencesFor, storyPassages, fivePassages, type Division } from './model';
+import { passagesFor, passagesForAllBooks, sentencesFor, storyPassages, type Division } from './model';
 import { validWordIds } from './lessons';
 import type { Gender, Tone } from '../prompter/lib/tts/voiceMap';
 
@@ -14,7 +14,7 @@ export const DEFAULT_STUDY: StudyData = {
   learningView: 'read', wordReviews: {},
 };
 const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
-const allIds = new Set([...storyPassages, ...fivePassages].map(p => p.id));
+const allIds = new Set(passagesForAllBooks('story').concat(passagesForAllBooks('five')).map(p => p.id));
 export function validateStudy(value: unknown): StudyData {
   const v = record(value);
   if (v.version !== 1) return structuredClone(DEFAULT_STUDY);

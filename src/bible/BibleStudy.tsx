@@ -4,7 +4,7 @@ import { useLang } from '../lib/i18nContext';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
-import { chapterFor, bibleBooks, meaningsFor, partition, sentencesFor, type Chapter, type Division, type Passage } from './model';
+import { chapterFor, bibleBooks, meaningsFor, partition, passagesForAllBooks, sentencesFor, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
@@ -187,6 +187,15 @@ export function BibleStudy() {
   ), [selectedKo, selectedEn, usesMarkLocalVersions, baseMeanings]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
+  const progressRows = useMemo(() => bibleBooks.map(book => {
+    const bookPassages = book.chapters.flatMap(item => partition(chapterFor(book.id, item.chapter), data.mode));
+    const done = bookPassages.filter(item => data.completed.includes(item.id)).length;
+    return { ...book, done, total: bookPassages.length };
+  }), [data.completed, data.mode]);
+  const progressTotal = useMemo(() => {
+    const all = passagesForAllBooks(data.mode);
+    return { done: all.filter(item => data.completed.includes(item.id)).length, total: all.length };
+  }, [data.completed, data.mode]);
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
   const cursor = useCallback((id: string) => setData(d => d.sentenceId === id ? d : { ...d, sentenceId: id }), []);
   const settings = (patch: Partial<StudySettings>) => {
@@ -263,6 +272,20 @@ export function BibleStudy() {
       <span className="bible-pilot">{t.biblePilot}</span>
     </header>
     {storageFailed && <p className="bible-alert" role="alert">{t.bibleStorageFailed}</p>}
+    <section className="bible-progress-overview" aria-labelledby="bible-progress-heading">
+      <div className="bible-progress-overview-heading"><div><h2 id="bible-progress-heading">{t.bibleProgressOverview}</h2>
+        <p>{t.bibleProgressSummary(progressTotal.done, progressTotal.total)}</p></div>
+        <span>{data.mode === 'story' ? t.bibleStory : t.bibleFive}</span></div>
+      <div className="bible-progress-table-wrap"><table><thead><tr>
+        <th scope="col">{t.bibleProgressBook}</th><th scope="col">{t.bibleProgressChapters}</th>
+        <th scope="col">{t.bibleProgressDone}</th><th scope="col">{t.bibleProgressTotal}</th><th scope="col">{t.bibleProgressPercent}</th>
+      </tr></thead><tbody>{progressRows.map(row => {
+        const percent = row.total ? Math.round(row.done / row.total * 100) : 0;
+        return <tr key={row.id} className={row.id === selectedBook ? 'is-current' : undefined}>
+          <th scope="row">{row.name}</th><td>{row.chapters.length}</td><td>{row.done}</td><td>{row.total}</td><td>{percent}%</td>
+        </tr>;
+      })}</tbody></table></div>
+    </section>
     <div className="bible-layout">
       <aside className="bible-sidebar">
         <h2>{t.bibleLibrary}</h2>

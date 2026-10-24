@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_STUDY, loadStudy, saveStudy, validateStudy, STUDY_KEY } from '../storage';
-import { storyPassages, fivePassages } from '../model';
+import { storyPassages, fivePassages, passagesForAllBooks } from '../model';
 afterEach(() => vi.unstubAllGlobals());
 describe('Bible progress storage', () => {
   it('round trips settings, position, mode and completion without touching legacy keys', () => {
@@ -25,6 +25,11 @@ describe('Bible progress storage', () => {
   it('accepts the one-time repeat setting', () => {
     const data = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, repeats: 1 } });
     expect(data.settings.repeats).toBe(1);
+  });
+  it('preserves completion from a book outside Mark 1', () => {
+    const external = passagesForAllBooks('story').find(item => item.id.includes(':JHN:'))!;
+    const data = validateStudy({ ...DEFAULT_STUDY, completed: [external.id] });
+    expect(data.completed).toEqual([external.id]);
   });
   it.each([null, [], 'wrong', { version: 99 }])('recovers invalid schema %j', value => {
     expect(validateStudy(value)).toEqual(DEFAULT_STUDY);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chapter, partition, sentencesFor, type Chapter } from '../model';
+import { chapter, partition, passagesForAllBooks, sentencesFor, type Chapter } from '../model';
 
 const numbered = (n: number): Chapter => ({ ...chapter, verses: Array.from({ length: n }, (_, i) => ({ number: i + 1, text: '你好。' })), headings: [] });
 describe('Bible passage boundaries and source integrity', () => {
@@ -42,5 +42,13 @@ describe('Bible passage boundaries and source integrity', () => {
       }
     }
     expect(sentencesFor(partition(chapter, 'story')[3]).filter(s => s.verse === 15).length).toBe(2);
+  });
+  it('builds complete passage catalogs for both study modes', () => {
+    const story = passagesForAllBooks('story');
+    const five = passagesForAllBooks('five');
+    expect(story.length).toBeGreaterThan(2000);
+    expect(five.length).toBeGreaterThan(story.length);
+    expect(new Set(story.map(item => item.id)).size).toBe(story.length);
+    expect(story.some(item => item.id.includes(':MAT:1:'))).toBe(true);
   });
 });

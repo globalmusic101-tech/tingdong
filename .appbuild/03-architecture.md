@@ -465,3 +465,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F26 architecture — 학습 카드 음성
 
 `LearningPanels`는 학습 영역당 하나의 `SentencePlayer`를 만들고, 카드의 중국어 텍스트를 `play(text, DEFAULT_SETTINGS)`로 전달합니다. 버튼은 카드별로 노출하지만 재생기는 공유하여 새 버튼을 누르면 이전 오디오와 기기 음성을 취소합니다. 학습 카드에는 성별·말투 상태를 만들지 않으며, 읽기 낭독 설정과도 분리합니다.
+
+## F27 architecture — 전권 진도 집계
+
+`passagesForAllBooks(mode)`가 66권·전체 장을 현재 분할 방식으로 변환해 진도 표의 행을 만듭니다. `StudyData.completed`의 단락 ID를 이 전권 목록으로 검증하므로 마가복음 1장 밖에서 완료한 기록도 저장·복원됩니다. 표는 `data.completed`와 `data.mode`를 기준으로 메모화합니다.

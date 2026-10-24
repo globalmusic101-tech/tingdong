@@ -260,3 +260,14 @@ F16 구현 완료로 보고하지 않습니다.
 | U04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 140개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F26 기획·구현·독립 검증 완료.**
+
+## F27 독립 게이트 — 성경 읽기 진도 표
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| V01 | 66권 전체 책별 진도 표와 현재 책 강조 | PASS — 66권 행에 장 수·완료 단락·전체 단락·진행률을 표시하고 현재 책 행을 강조 |
+| V02 | 이야기별/5절 단위 전환에 따른 단락 수·진행률 갱신 | PASS — `data.mode` 기준 전체 단락 집계와 화면 갱신을 연결하고 전권 카탈로그 테스트 통과 |
+| V03 | 마가복음 1장 밖 완료 기록 저장·재실행 보존 | PASS — 전권 단락 ID를 저장 검증 대상으로 확장하고 요한복음 단락 보존 테스트 통과 |
+| V04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F27 기획·구현·독립 검증 완료.**
