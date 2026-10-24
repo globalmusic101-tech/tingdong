@@ -36,7 +36,7 @@ export function PrompterApp() {
   );
 
   const {
-    index, status, fallbackReason, range, pendingStart, pace,
+    index, status, fallbackReason, playbackError, range, pendingStart, pace,
     goto, next, prev, repeat, stop, markStart, markEnd, clearRange,
   } = usePrompter(sentences, settings, Math.min(saved.index, Math.max(0, sentences.length - 1)));
 
@@ -145,9 +145,14 @@ export function PrompterApp() {
           {t.bannerNoBridge} (<code>npm run app:dev</code>).
         </div>
       )}
-      {fallbackReason && (
+      {fallbackReason && !playbackError && (
         <div className="pr-banner pr-banner-warn">
           {t.bannerFallback(fallbackReason)}
+        </div>
+      )}
+      {playbackError && (
+        <div className="pr-banner pr-banner-warn" role="alert">
+          {playbackError === 'chinese-voice-unavailable' ? t.bibleNoVoice : t.audioFailed(playbackError)}
         </div>
       )}
 

@@ -1,0 +1,28 @@
+{
+  "project": "tingdong",
+  "increment": "F13 — 병렬 뜻·단어·문법",
+  "updatedAt": "2026-10-22",
+  "stages": {
+    "01-prd": "F13 appended",
+    "02-screens": "learning panels appended",
+    "03-architecture": "bilingual data and storage migration appended",
+    "04-tasks": "C1–C6 appended",
+    "supervisor-verify": "planning and C1–C4 independent review PASS",
+    "05-gate": "partial live evidence; see docs/F13-verification.md"
+  },
+  "content": {
+    "verses": 45,
+    "vocabulary": 45,
+    "grammar": 19
+  },
+  "validation": {
+    "tests": "116/116",
+    "package": "built; 7 dist files match; native UI verified"
+  },
+  "next": [
+    "complete remaining live gate evidence",
+    "F14 recall and spaced reviews",
+    "F15 sermon listening"
+  ],
+  "notes": "F12 history preserved. Korean+English learning content explicitly requested by user; interface follows locale. No full gate PASS claimed."
+}

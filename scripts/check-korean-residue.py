@@ -28,6 +28,8 @@ def scan(path: pathlib.Path):
     return [(i + 1, l.strip()) for i, l in enumerate(body.splitlines()) if KO.search(l)]
 
 FILES = [
+    'src/bible/LearningPanels.tsx',
+    'src/bible/BibleStudy.tsx', 'src/bible/model.ts', 'src/bible/playback.ts', 'src/bible/storage.ts',
     'src/App.tsx', 'src/AppShell.tsx', 'src/main.tsx', 'src/popup/popup.ts',
     'src/prompter/PrompterApp.tsx', 'src/prompter/PrompterView.tsx',
     'src/prompter/ScriptInput.tsx', 'src/prompter/MenuBar.tsx',
@@ -35,6 +37,9 @@ FILES = [
     'src/lib/translate.ts', 'src/lib/matchHighlight.ts', 'src/lib/i18nContext.tsx',
     'popup.html', 'index.html',
 ]
+
+# F13 사용자 요청: lessons.ts의 한국어/영어 학습 자료는 양 언어에서 함께 보입니다.
+# UI 문자열 예외를 늘리지 않고, 콘텐츠는 lessons.test.ts에서 양언어·출처·범위를 검사합니다.
 
 total = 0
 for name in FILES:

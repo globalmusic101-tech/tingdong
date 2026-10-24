@@ -1,0 +1,25 @@
+{
+  "project": "tingdong",
+  "increment": "F12 — 짧은 성경 단락 학습",
+  "updatedAt": "2026-10-22",
+  "stages": {
+    "01-prd": "F12 appended",
+    "02-screens": "S4 appended",
+    "03-architecture": "F12 appended",
+    "04-tasks": "B1–B4 appended",
+    "supervisor-verify": "planning PASS by independent supervisor; implementation re-review unavailable (usage limit)",
+    "05-gate": "partial verification; see docs/F12-verification.md"
+  },
+  "tasks": {
+    "B1": "implemented; source match and tests passed",
+    "B2": "implemented; tests passed; online 403 with local fallback",
+    "B3": "implemented; live UI and persistence checked",
+    "B4": "packaged; some live gate evidence remains"
+  },
+  "next": [
+    "F13 vocabulary and grammar",
+    "F14 recall and spaced reviews",
+    "F15 sermon listening"
+  ],
+  "notes": "F11 history preserved in history/f11. No source gate bypass. No full implementation gate PASS claimed."
+}

@@ -136,3 +136,68 @@ T2·T3·T4는 T1만 끝나면 서로 독립이다. 순서대로 하되, 각각�
 | F11-3 교차 하이라이트 | S1 | T2 |
 | F11-4 한국어 0 | 전 화면 | T2 · T3 · T4 (확인: T5) |
 | F11-5 회귀 없음 | 전 화면 | T2 · T3 (확인: T5) |
+
+
+---
+# F12 — 첫 구현 작업 (2026-10-22)
+| 작업 | 요구 | 검증 |
+|---|---|---|
+| B1 원문·제목 출처 확보 및 단락/문장 모델 | F12-1,5,9 | 45절 원문 대조, 제목 경계 9개, 누락/중복/5절 fallback/부분 heading/잘못된 heading 단위 테스트 |
+| B2 반복 컨트롤러와 음성 실패 처리 | F12-3,4,7 | 가짜 플레이어와 fake timers로 횟수/계속/전환/정지/대기 취소/오류/순차 끝 검증. 실제 Electron TTS 응답/오디오 재생 이벤트 별도 확인 |
+| B3 성경 화면·저장·언어 | F12-2,5,6,8,9 | UI에서 단락/병음/모드/완료/새로고침/언어 전환/기존 두 화면 확인. 손상 저장/저장 실패 테스트 |
+| B4 통합·패키징 | 전체 | npm test, npm run build, npm run check:i18n(새 파일 포함), 변경 파일 lint, git diff --check, 화면 시각 점검, npm run app:build. 패키지 내용 확인. |
+
+B1→B2/B3→B4 순서. 먼저 독립 감독관이 01~04를 검토하고 05 게이트를 파생한다.
+증거가 없는 동작은 완료로 기록하지 않는다. 자동화 음성 이벤트 확인과 사람이 듣는 발음 품질 검증을 구분한다.
+새 범위는 단락 읽기 기반까지이며 단어/문법/SRS 전체 구현으로 보고하지 않는다.
+
+
+---
+# F13 작업
+1. C1: 기획 독립 검토 후 게이트 파생. F12 기록은 history/f12 보존.
+2. C2: 마가복음1장 45절 양언어 풀이 + 단어/문법 로컬 데이터와 범위 필터 작성.
+3. C3: 뜻 병렬 표시/학습 탭/단어 카드/문법 카드와 저장 마이그레이션 연결.
+4. C4: 콘텐츠 커버리지/본문 용례/5절 필터/저장 호환·손상 테스트, 기존 테스트, build/i18n/변경파일 lint/diff.
+5. C5: 실제 UI에서 양언어 뜻, 단어 가리기/회상 표시/재실행, 문법 표시, 모드/언어 전환, 낭독 정지 검증.
+6. C6: app:build 및 패키지 파일 일치 확인, 최종 패키지 UI 재확인. 미검증은 게이트에 그대로 기록.
+
+---
+# F14 작업 — Google Cloud 고품질 음성
+1. D1: 독립 감독관이 F14 PRD·화면·인증/캐시/비용 구조와 테스트 기준을 검토, 지적 반영 후 게이트 파생.
+2. D2: 안내문으로 Google Cloud TTS API enable, 결제 연결, quota project ID, Desktop OAuth client ID/test user와
+   `serviceusage.services.use` 권한을 구성. OAuth PKCE loopback, safeStorage 토큰 저장/갱신/해제 구현.
+3. D3: 모델/보이스/성별/속도/음높이 설정, 듣기 샘플, 네트워크 전송 사전 동의, 명시적 오류/재시도 UI 연결.
+4. D4: MP3 영속 LRU 캐시·UTC 월 800,000자 상한·원자적 예약 원장·캐시 관리 구현. 동일 in-flight 합성 병합,
+   예문/샘플/재시도·전송 후 불명 응답 과금 예약, 프리페치 비활성. 로그인·동의·요청실패·쿼터·손상 원장·
+   동시 요청·캐시 삭제 중 늦은 응답·연결해제/동의철회 후 캐시 재생과 기존 설정 보존 검증.
+5. D5: 공식 voice inventory와 선택값을 대조하고 실제 Mandarin 음성 3종 이상의 샘플/배속/피치 비교. Chirp preview를 구분.
+   오디오 payload, 반복 호출 0, 자동 기기 폴백 0 확인.
+6. D6: Gate 검토. typecheck, unit, i18n, lint, diff, app:build, 패키지 SHA, native 앱 OAuth/실제 합성·캐시 재생·앱 재시작 실증. 실제 사용자 GCP 인증이 없으면 Cloud 실합성은 미완료로 남기고 구성 방법을 사용자에게 안내.
+# Edge recovery maintenance
+E1: Independent planning review; append maintenance gate without replacing F14 pending evidence.
+E2: Reproduce old transport failure, pin verified upstream dependency and run real samples through bridge.
+E3: Run regression tests/build; package app and verify bundled dependency. Report actual limits and sample evidence.
+E4: 2.1.0 실패와 Python 7.3.1 성공을 별도 기록하고, v2 JS 호환 어댑터 및 출처/라이선스 추가.
+고정 시각 여러 개와 300초 경계의 토큰을 Python 원본에 대조하고 실제 앱 IPC 남녀/prosody 합성을 다시 검증.
+원본 토큰 일치만으로 서비스 성공을 주장하지 않으며, 패키징에 호환 모듈과 라이선스가 포함되는지 확인.
+
+---
+# F15 작업 — 음성 설정 정리
+
+1. G1: 독립 감독관이 요구·화면·마이그레이션·비파괴 범위를 검토하고 게이트를 파생합니다.
+2. G2: 읽기 연습과 성경 공부에서 Google Cloud UI 및 런타임 분기를 제거합니다.
+3. G3: 설정 타입을 Edge/기기 음성으로 좁힙니다. 읽기 연습 v3의 local/Google fixture에서
+   엔진 외 배속·음높이·병음·글자 설정과 원고/현재 위치가 보존되는지 검사하고, 성경 version 1 fixture에서
+   단락·문장·완료·단어 복습·나머지 설정을 보존한 채 Google 엔진만 Edge로 바뀌는지 검사합니다.
+4. G4: main/preload Google IPC 등록과 미사용 어댑터를 제거하되 사용자 데이터 파일은 삭제하지 않습니다.
+5. G5: test, build, i18n, 변경 파일 lint, diff, app:build 및 패키지에서 Google 런타임 부재를 확인합니다.
+
+---
+
+# F16 작업 — 기존 번역문과 문장별 자동 진행
+
+1. H1: eBible 공개 번역본의 마가복음 1장 한국어·영어 절 데이터를 확보하고 출처·라이선스·절 번호 대조 테스트를 추가합니다.
+2. H2: `verseMeanings`를 기존 번역문 데이터로 교체하고, About 화면의 판본명·원문 링크·앱 작성 학습 자료 구분을 연결합니다.
+3. H3: 반복 저장 validator와 화면 선택지에 1회를 추가하고, 유한 반복 종료 후 다음 문장으로 진행하는 controller 규칙을 구현합니다.
+4. H4: fake timer로 1/3/5회, 계속 반복, 다음 문장 count 초기화, 마지막 문장 정지, 정지·선택 취소를 검사하고 기존 테스트를 회귀 실행합니다.
+5. H5: typecheck/test/i18n/변경 파일 lint/diff/build를 실행하고 성경 화면에서 양언어 출처와 반복 진행을 확인합니다. 실제 앱 패키징과 사람 청음은 수행 여부를 별도로 기록합니다.

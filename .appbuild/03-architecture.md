@@ -319,3 +319,103 @@ you  your  they  them  their  its  but  not  all  any  can  will  would
 
 1. 설교문처럼 문장이 길 때 쉼표 분할을 기본으로 켤까 → Phase 1 실측 후 결정.
 2. `Space`를 "재생/정지"로 뒀는데, 실사용에서 "다음 문장"이 더 자연스러우면 바꾼다 → Phase 2 후 결정.
+
+
+---
+# F12 — 성경 단락과 반복 학습 구조 (2026-10-22)
+- src/bible/: 데이터, 단락 분할 순수 함수, 검증된 로컬 저장, 재생 컨트롤러, BibleStudy.tsx와 CSS.
+- 원문 JSON: 판본 ID, 책 ID, 장, 절 번호, text. headings: 시작 절/끝 절/학습 제목 키/중국어 원제.
+- 단락 ID는 판본+책+장+시작절+끝절. 제목/언어/배열 위치로 저장하지 않는다.
+- 문장 ID는 절 번호+절 내 순번. splitSentences를 절마다 적용하고 verse 번호를 유지한다.
+- partition: 정렬/범위/겹침을 검증한 headings 사용; 커버되지 않은 구간을 5절로 분할한다.
+  유효하지 않은 headings는 명시적 오류. 본문 목록의 절 번호 연속성·빈 본문을 검증한다.
+- mode=five는 각 장을 5절로 나눈다. 모드 변경 시 현재 절을 포함하는 단락으로 이동하고 정지한다.
+- controller는 SentencePlayer를 어댑터로 사용. repeat/sequence 상태와 반복 횟수, 타이머를 한곳에 둔다.
+  stop은 모든 대기와 현재 재생을 취소한다. SentencePlayer.requestId로 늦은 합성 응답을 버린다.
+- 기존 player/webSpeech에 선택적 onError를 추가한다. 기기 음성 오류를 ended로 삼키지 않고 정지/오류를 보고한다.
+  중국어 음성이 없으면 실패를 알린다. 기존 usePrompter도 오류가 fallback 안내에 보이도록 연결한다.
+- 새 저장 키 tingdong.bible.v1. schema 검증 후 기본값 병합, 부분 손상 복구. 저장 실패 반환을 UI에서 안내.
+  기존 prompter.* 키는 수정하지 않는다. 새 화면은 기존 설정의 암묵적 음소거를 물려받지 않는다.
+- 학습 제목/문구는 i18n.ts, 중국어 원문/소제목은 콘텐츠 JSON. UI 언어 전환은 본문·진도에 영향 없음.
+- 원문은 번들 내 보관, 렌더링에 네트워크 불필요. Edge 엔진 선택 시만 기존 IPC/TTS 호출.
+- 브라우저는 기기 음성만 제공. 앱은 Edge+기기 음성 선택. TTS 캐시는 기존 세션 메모리 정책 유지.
+- 새 런타임 패키지 없이 구현한다. 원본 HTML은 docs/sources 아래 보존하고 JSON 추출과 원문 대조를 수행한다.
+
+
+---
+# F13 — 로컬 양언어 학습 데이터
+src/bible/lessons.ts: Bilingual {ko,en}, 45절 meanings, VocabularyItem[], GrammarItem[].
+단어 id=판본:책:장:verse:word. 용례는 본문 실제 부분 문자열로 검증.
+문법 항목은 anchor verse와 quote, pattern, breakdown(중국어 구성), explanation(ko/en),
+practice(중국어)와 practiceMeaning(ko/en). lessonFor(passage)는 anchor verse가 범위 안인 항목만 반환.
+학습 데이터는 UI 문자열과 구분하되 버튼/설명용 UI는 i18n.ts 한 곳. 학습용 한국어 데이터가
+English에서 보이는 것은 사용자 명시 요청. 검사기는 UI와 en 표의 한글 검사를 그대로 유지하고
+새 UI 파일 포함. 콘텐츠는 별도 테스트로 ko/en 존재·45절 커버리지·본문 인용/범위 정확성 검증.
+StudyData 확장: settings.meanings=true, learningView='read'|'words'|'grammar',
+wordReviews: Record<validWordId,'known'|'again'>. 기존 version=1 구조에 선택 필드 기본값 병합으로 이행.
+StudySession은 영역이 바뀌어도 마운트를 유지하여 문장 위치 보존. read는 hidden으로 숨기고,
+전환 handler에서 stopRef를 동기 호출. 새 자료 패널과 본문 뜻은 공유 BilingualMeaning UI 사용.
+카드 숨김 상태는 지역 UI 상태, 기억/다시 상태만 저장. 새로 열면 뜻은 표시하고 기억 상태 복원.
+
+---
+# F14 — 공식 온라인 음성 아키텍처
+현재 `TtsEngine` 경계에 `google-cloud` 어댑터를 추가합니다. 인증/토큰/HTTP는 Electron main에서만 수행하고
+렌더러는 검증된 오디오 바이트·상태만 IPC로 받습니다. Cloud REST `text.synthesize`에는 OAuth access token이
+필요하므로 API 키와 서비스 계정 JSON을 배포물에 넣지 않습니다. Desktop OAuth client ID는 public client 식별자이며
+비밀값이 아닙니다. 앱 설정에서 Desktop client ID와 quota project ID를 입력받습니다. 프로젝트 관리자는 Cloud TTS API를
+활성화하고 결제를 연결해야 하며, 사용자에게 `serviceusage.services.use`가 필요합니다. REST 호출마다
+`x-goog-user-project`에 quota project를 지정합니다. OAuth 성공/프로젝트 준비/합성 테스트를 별도 상태로 둡니다.
+시스템 브라우저를 열어 `http://127.0.0.1:<ephemeral-port>`에만 바인딩하고, PKCE S256 + 일회성 state,
+일회 callback, 제한시간, 취소 및 재진입 금지를 적용합니다. IPC sender와 인자/음성 ID/텍스트 길이를 main에서 검증.
+Refresh token은 `safeStorage`로 암호화하여 userData 아래 저장합니다. backend가 `basic_text` 또는 `plaintext`이거나
+복호화가 실패하면 평문 저장으로 내려가지 않고 Cloud 사용을 중지합니다. 해제는 디스크 암호문 삭제와 로컬 연결정보
+삭제이며, 사용자 동작 없이 프로젝트 전체 승인 폐기 endpoint를 호출하지 않습니다. 서명 없는 패키지 업데이트 뒤
+Keychain 재승인이 필요할 수 있으므로 실제 앱 수용 기준에서 확인합니다.
+음성 인벤토리는 Google voices:list 응답 기반으로 갱신하며, Mandarin cmn-CN/`cmn-Hans-CN`과 cmn-TW만
+보여줍니다. 모델 선택(Standard/WaveNet/Chirp 3 HD), 성별, voice name, languageCode를 voice 목록과 일치 검증.
+voices:list 자체는 pitch/rate 지원을 알려주지 않습니다. Standard/WaveNet는 해당 모델 문서·실합성으로 pitch/rate를
+검증합니다. Chirp 3 HD SSML/prosody는 Preview이므로 별도 표시하고 pitch/rate 효과가 실합성에서 확인된 때만 제공합니다.
+Google 합성 성공 오디오는 userData/audio-cache에 해시 기반 키로 원자 저장, 용량 제한 LRU. 캐시 key에 원문 해시·voice·모델·
+언어·rate·pitch·format·schema 버전을 포함합니다. 원문 텍스트는 파일명/로그/사용량 원장에 저장하지 않습니다.
+캐시 재생은 네트워크·문자량 계수에서 제외. 연결 해제/동의 철회는 신규 요청만 막고 캐시는 별도 삭제 전까지 로컬 재생 가능.
+삭제 generation을 증가시켜 삭제와 겹친 늦은 응답이 캐시를 되살리지 않게 합니다.
+사용량 원장은 main 프로세스에서 직렬화·원자 교체하며, UTC 월별 800,000자 기본 설치본 상한을 두고 전송 직전 예약합니다.
+동일 진행 중 cache key 요청은 합칩니다. 샘플·재시도 요청도 계수, timeout/전송 뒤 실패는 과금 여부 불명으로 예약 유지,
+프리페치는 비활성. 로컬 상한은 이 앱 설치의 신규 전송만 제한하며 Google 프로젝트 총비용을 보장하지 않습니다.
+원장 손상 시 fail-closed. 사용자가 명시적으로 원장을 초기화하면 해당 앱 제한을 다시 시작하나 Cloud billing 사용량을
+초기화하지 않음을 명시합니다. 요청 타임아웃·취소는 AbortSignal로 묶고 현재 request ID/삭제 generation으로 늦은 응답 폐기.
+Google 오류, OAuth 취소, 토큰 만료, 네트워크/쿼터/상한에서 `onError`; 자동 `webSpeech` 호출은 하지 않습니다.
+기존 Edge 실패 차단 유지. 사용자가 기기 음성 엔진을 직접 선택한 때에만 `webSpeech` 실행.
+개인용 배포 기준. 공개 다중 사용자 배포 전 OAuth consent verification/각 사용자 프로젝트의 인증·요금·개인정보 검토 필수.
+# Edge recovery maintenance
+Compare installed msedge-tts 2.0.7 against 2.1.0. Use upstream transport fixes, no node_modules patch or browser credential extraction. Verify through the application's IPC handler with Mandarin female/male and prosody samples; decode MP3. Preserve validation and cancellation.
+호환 어댑터 보완: 공개 edge-tts 7.3.1의 drm.py v2 생성 알고리즘을 별도 JS 파일로 이식하고
+원본 버전·출처·LGPL 고지/라이선스를 함께 보존합니다. msedge-tts의 getSynthUrl을 명시적 어댑터에서
+재정의해 해당 상위 구현의 endpoint와 버전 매개변수를 사용합니다. node_modules 직접 변경은 없습니다.
+시간 인자를 주입할 수 있도록 하여 고정 시각 및 300초 경계의 결과를 Python 원본과 비교합니다.
+JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니다. 허용 호스트를 고정하며, 기존 인자 검증과
+연결/합성 timeout을 유지합니다. 429에 대한 반복 재시도로 한도를 회피하지 않습니다.
+
+---
+# F15 architecture — Google 실험 경로 제거
+
+- `PrompterSettings.engine`과 `StudySettings.engine`은 `'edge' | 'local'`만 허용합니다.
+- 읽기 연습은 설정 스키마 버전을 올리되, 현행 v3를 기본값 초기화 전에 별도 migration으로 읽습니다.
+  v3의 `engine === 'google'`만 `edge`로 바꾸고 다른 설정을 병합·검증해 보존합니다.
+- 성경 StudyData는 version 1을 유지하며 validator에서 `google`만 `edge`로 정규화합니다.
+- `googleTtsBridge`, preload `googleTts`, renderer Google 어댑터와 player 분기를 제거합니다.
+- Google 자격 증명 파일은 더 이상 읽거나 쓰지 않지만 자동 삭제하지 않습니다.
+- Edge IPC/v2 호환 어댑터와 사용자가 선택하는 기기 음성 경로는 유지합니다.
+
+---
+
+# F16 architecture — 번역문 소스와 반복 진행
+
+- `src/bible/lessons.ts`의 `verseMeanings`는 앱 번역 결과가 아니라 고정된 기존 번역문 데이터입니다.
+  `ko`는 eBible `kor`(Korean Bible 1910), `en`은 `eng-web`(World English Bible Classic)으로
+  절 번호를 키로 맞춥니다. 소스 URL·판본명은 별도 상수와 About 화면에서 추적할 수 있게 합니다.
+- 본문 뜻 데이터는 로컬 번들이므로 성경 읽기 화면 렌더링을 위해 번역 엔진이나 네트워크를 호출하지 않습니다.
+  단어·문법 해설은 별도의 작성 학습 데이터로 유지하며 뜻 데이터의 출처와 섞지 않습니다.
+- `StudySettings.repeats`의 유한 값은 `1 | 3 | 5`, 무한 값은 `0`입니다. 저장 validator도 이 집합만 허용합니다.
+- `StudyPlayback`의 repeat 모드는 유한 횟수를 채우면 같은 모드를 유지한 채 다음 문장으로 index를 이동하고 count를 0부터 다시 셉니다.
+  마지막 문장에서는 `stop()`으로 종료합니다. 무한 반복은 현재 문장에 남습니다. generation으로 정지·선택·언마운트 뒤의 대기 타이머를 무효화합니다.

@@ -35,13 +35,17 @@ type PlayerEvents = {
   onFallback: (reason: string) => void;
   /** 끝까지 재생된 문장의 실측 속도. 배속 숫자만으로는 빠른지 알 수 없다. */
   onPace: (charsPerMinute: number) => void;
+  onError?: (reason: string) => void;
 };
 
 export class SentencePlayer {
   private audio = new Audio();
   /** 매 재생 요청마다 증가. 늦게 도착한 응답을 버리는 기준. */
   private requestId = 0;
-  private fallbackNotified = false;
+  private edgeFailure: string | null = null;
+
+  /** 사용자가 음성 설정을 바꾼 뒤에만 실패한 온라인 엔진을 다시 시도합니다. */
+  resetFallback(): void { this.edgeFailure = null; }
 
   /** 지금 재생 중인 문장의 한자 수와 소리가 나기 시작한 시각 */
   private spokenChars = 0;
@@ -50,12 +54,12 @@ export class SentencePlayer {
   private silentTimer: number | null = null;
 
   constructor(private events: PlayerEvents) {
-    this.audio.onended = () => {
-      this.reportPace();
-      this.events.onStatus('idle');
-      this.events.onEnded();
-    };
-    webSpeech.watchVoices();
+  }
+
+  private fail(reason: string, id: number): void {
+    if (id !== this.requestId) return;
+    this.stop();
+    (this.events.onError ?? this.events.onFallback)(reason);
   }
 
   /** 끝까지 재생된 문장만 센다 — 중간에 끊긴 것은 속도가 아니다 */
@@ -75,7 +79,7 @@ export class SentencePlayer {
   }
 
   private useLocal(settings: PrompterSettings): boolean {
-    return settings.engine === 'local' || !hasEdgeBridge();
+    return settings.engine === 'local' || (settings.engine === 'edge' && (!hasEdgeBridge() || this.edgeFailure !== null));
   }
 
   private playLocal(text: string, settings: PrompterSettings, id: number): void {
@@ -83,13 +87,16 @@ export class SentencePlayer {
     const rate = settings.rate * (1 + preset.ratePct / 100);
     const pitch = 1 + (settings.pitchPct + preset.pitchPct) / 100;
 
-    this.events.onStatus('playing');
-    this.beginTiming(text);
+    this.events.onStatus('loading');
     webSpeech.speakLocal(text, rate, pitch, () => {
       if (id !== this.requestId) return;
       this.reportPace();
       this.events.onStatus('idle');
       this.events.onEnded();
+    }, (reason) => this.fail(reason, id), () => {
+      if (id !== this.requestId) return;
+      this.beginTiming(text);
+      this.events.onStatus('playing');
     });
   }
 
@@ -111,7 +118,9 @@ export class SentencePlayer {
     }
 
     if (this.useLocal(settings)) {
-      this.playLocal(text, settings, id);
+      if (settings.engine === 'edge' && this.edgeFailure) this.events.onFallback(this.edgeFailure);
+      try { this.playLocal(text, settings, id); }
+      catch (error) { this.fail(String(error), id); }
       return;
     }
 
@@ -121,6 +130,13 @@ export class SentencePlayer {
       if (id !== this.requestId) return; // 그 사이 다른 문장으로 넘어갔다
 
       this.audio.src = url;
+      this.audio.onended = () => {
+        if (id !== this.requestId) return;
+        this.reportPace();
+        this.events.onStatus('idle');
+        this.events.onEnded();
+      };
+      this.audio.onerror = () => this.fail('audio-playback-error', id);
       await this.audio.play();
       if (id !== this.requestId) return;
       this.beginTiming(text);
@@ -129,17 +145,16 @@ export class SentencePlayer {
       if (id !== this.requestId) return;
 
       const reason = error instanceof Error ? error.message : String(error);
-      if (!this.fallbackNotified) {
-        this.fallbackNotified = true;
-        this.events.onFallback(reason);
-      }
-      this.playLocal(text, settings, id);
+      this.edgeFailure = reason;
+      this.events.onFallback(reason);
+      try { this.playLocal(text, settings, id); }
+      catch (localError) { this.fail(String(localError), id); }
     }
   }
 
   /** 다음 문장을 미리 합성해 둔다. 실패해도 조용히 넘어간다. */
   prefetch(text: string, settings: PrompterSettings): void {
-    if (!text || settings.muted || this.useLocal(settings)) return;
+    if (!text || settings.muted || settings.engine === 'local' || (settings.engine === 'edge' && this.useLocal(settings))) return;
     void synthEdge(buildParams(text, settings)).catch(() => {});
   }
 

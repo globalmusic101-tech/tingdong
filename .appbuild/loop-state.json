@@ -1,21 +1,25 @@
 {
   "project": "tingdong",
-  "increment": "F11 — 영어권 배포판",
-  "updatedAt": "2026-09-02",
+  "increment": "F14 — 공식 Google Cloud 중국어 음성",
+  "updatedAt": "2026-10-22",
   "stages": {
-    "01-prd": "done (v3)",
-    "02-screens": "done",
-    "03-architecture": "done (v3, §8 추가)",
-    "04-tasks": "done",
-    "supervisor-verify": "done — 2회차 CRITICAL 0 / HIGH 0 / MED 0 / LOW 2 (수용)",
-    "05-gate": "조건부 통과 — 실측 3건이 사람 확인 대기"
+    "01-prd": "F14 revised after 2 HIGH and 4 MED planning findings",
+    "02-screens": "F14 setup, consent, billing and cache states defined",
+    "03-architecture": "F14 OAuth, encrypted tokens, atomic request ledger and cache lifecycle defined",
+    "04-tasks": "D1–D6 mapped",
+    "supervisor-verify": "planning PASS — independent rereview, unresolved CRITICAL/HIGH/MED 0",
+    "05-gate": "F14 derived; J01–J20 PENDING"
   },
-  "tasks": {
-    "T1": "done — i18n 기반·언어 토글",
-    "T2": "done — 번역기 화면 + 교차 하이라이트",
-    "T3": "done — 읽기 연습 (버그 2건 수정)",
-    "T4": "done — 팝업·Electron 껍데기",
-    "T5": "부분 — E4-popup·E4-shell·E2-reverse는 사람 눈 필요"
+  "implementation": "not reviewed or approved complete",
+  "previousIncrement": {
+    "name": "F13",
+    "archive": "history/f13",
+    "status": "preserved with existing partial evidence"
   },
-  "notes": "구현은 orchestrate 멀티페인이 아니라 메인 세션이 직접 수행(사용자 지시). producer≠evaluator 미충족 — 동일 세션이 작성·검증."
+  "next": [
+    "implement D2–D4 within F14 gate",
+    "verify D5 voice capabilities and listening samples",
+    "complete D6 actual-account native package evidence; unavailable authentication remains pending"
+  ],
+  "notes": "Planning PASS permits implementation only. It does not certify OAuth, cloud synthesis, zero billing, voice quality, or source behavior."
 }

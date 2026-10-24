@@ -1,0 +1,49 @@
+import { passagesFor, sentencesFor, storyPassages, fivePassages, type Division } from './model';
+import { validWordIds } from './lessons';
+
+export const STUDY_KEY = 'tingdong.bible.v1';
+export type LearningView = 'read' | 'words' | 'grammar';
+export type WordReview = 'known' | 'again';
+export type StudySettings = { pinyin: boolean; meanings: boolean; rate: number; repeats: number; gapMs: number; engine: 'edge' | 'local' };
+export type StudyData = { version: 1; mode: Division; passageId: string; sentenceId: string; completed: string[]; settings: StudySettings;
+  learningView: LearningView; wordReviews: Record<string, WordReview> };
+export const DEFAULT_STUDY: StudyData = {
+  version: 1, mode: 'story', passageId: storyPassages[0].id, sentenceId: '1:0', completed: [],
+  settings: { pinyin: true, meanings: true, rate: 0.85, repeats: 0, gapMs: 1000, engine: 'local' },
+  learningView: 'read', wordReviews: {},
+};
+const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
+const allIds = new Set([...storyPassages, ...fivePassages].map(p => p.id));
+export function validateStudy(value: unknown): StudyData {
+  const v = record(value);
+  if (v.version !== 1) return structuredClone(DEFAULT_STUDY);
+  const mode = v.mode === 'five' ? 'five' : 'story';
+  const passage = passagesFor(mode).find(p => p.id === v.passageId) ?? passagesFor(mode)[0];
+  const lines = sentencesFor(passage);
+  const s = record(v.settings);
+  return {
+    version: 1, mode, passageId: passage.id,
+    sentenceId: lines.find(l => l.id === v.sentenceId)?.id ?? lines[0].id,
+    completed: Array.isArray(v.completed) ? [...new Set(v.completed.filter((id): id is string => typeof id === 'string' && allIds.has(id)))] : [],
+    learningView: v.learningView === 'words' || v.learningView === 'grammar' ? v.learningView : 'read',
+    wordReviews: Object.fromEntries(Object.entries(record(v.wordReviews)).filter(([id, state]) => validWordIds.has(id) && (state === 'known' || state === 'again'))) as Record<string, WordReview>,
+    settings: {
+      pinyin: typeof s.pinyin === 'boolean' ? s.pinyin : true,
+      meanings: typeof s.meanings === 'boolean' ? s.meanings : true,
+      rate: typeof s.rate === 'number' && [0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5].includes(s.rate) ? s.rate : 0.85,
+      repeats: typeof s.repeats === 'number' && [0, 1, 3, 5].includes(s.repeats) ? s.repeats : 0,
+      gapMs: typeof s.gapMs === 'number' && [500, 1000, 2000, 3000].includes(s.gapMs) ? s.gapMs : 1000,
+      engine: s.engine === 'edge' || s.engine === 'google' ? 'edge' : 'local',
+    },
+  };
+}
+export function loadStudy(): { data: StudyData; failed: boolean } {
+  try {
+    const raw = localStorage.getItem(STUDY_KEY);
+    return { data: raw ? validateStudy(JSON.parse(raw)) : structuredClone(DEFAULT_STUDY), failed: false };
+  } catch { return { data: structuredClone(DEFAULT_STUDY), failed: true }; }
+}
+export function saveStudy(data: StudyData): boolean {
+  try { localStorage.setItem(STUDY_KEY, JSON.stringify(data)); return true; }
+  catch { return false; }
+}

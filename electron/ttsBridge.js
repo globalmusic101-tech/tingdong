@@ -1,4 +1,7 @@
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
+import { installEdgeCompatibility } from './edgeCompatibility.js';
+
+installEdgeCompatibility(MsEdgeTTS);
 
 /**
  * 렌더러가 직접 WebSocket으로 MS 엔드포인트에 붙으면 CSP에 걸리므로,

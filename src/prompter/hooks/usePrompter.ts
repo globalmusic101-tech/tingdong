@@ -13,6 +13,7 @@ export function usePrompter(sentences: Sentence[], settings: PrompterSettings, s
   const [index, setIndex] = useState(startIndex);
   const [status, setStatus] = useState<PlayStatus>('idle');
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   /** B를 누르기 전까지 대기 중인 시작점 */
   const [pendingStart, setPendingStart] = useState<number | null>(null);
   const [range, setRange] = useState<Range | null>(null);
@@ -45,6 +46,7 @@ export function usePrompter(sentences: Sentence[], settings: PrompterSettings, s
         onStatus: setStatus,
         onEnded: () => onEndedRef.current(),
         onFallback: setFallbackReason,
+        onError: setPlaybackError,
         onPace: (measured) => {
           const samples = paceSamples.current;
           samples.push(measured);
@@ -62,11 +64,14 @@ export function usePrompter(sentences: Sentence[], settings: PrompterSettings, s
     }
   }, []);
 
+  useEffect(() => { player.resetFallback(); }, [player, settings.engine, settings.gender, settings.tone]);
+
   const speak = useCallback(
     (i: number) => {
       const list = sentencesRef.current;
       if (i < 0 || i >= list.length) return;
 
+      setPlaybackError(null);
       void player.play(list[i].text, settingsRef.current);
 
       // 다음 두 문장을 미리 받아둔다 — 문장 전환 지연을 여기서 없앤다
@@ -171,7 +176,7 @@ export function usePrompter(sentences: Sentence[], settings: PrompterSettings, s
   }, [clearAutoTimer, player]);
 
   return {
-    index, status, fallbackReason, range, pendingStart, pace,
+    index, status, fallbackReason, playbackError, range, pendingStart, pace,
     goto, next, prev, repeat, stop,
     markStart, markEnd, clearRange,
   };

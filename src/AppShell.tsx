@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import App from './App';
 import { PrompterApp } from './prompter/PrompterApp';
+import { BibleStudy } from './bible/BibleStudy';
 import { LangProvider, useLang } from './lib/i18nContext';
 import type { UiLang } from './lib/i18n';
 import './appShell.css';
 
-type Mode = 'translate' | 'prompter';
+type Mode = 'translate' | 'prompter' | 'bible';
 
 /**
  * 언어 선택은 탭 줄 오른쪽 끝에 둔다 (02-screens).
@@ -33,17 +34,25 @@ function LangToggle() {
 function Shell() {
   const { t } = useLang();
   const [mode, setMode] = useState<Mode>(
-    () => (localStorage.getItem('app.mode') as Mode) || 'translate',
+    () => {
+      try {
+        const saved = localStorage.getItem('app.mode');
+        return saved === 'translate' || saved === 'prompter' ? saved : 'bible';
+      } catch { return 'bible'; }
+    },
   );
 
   const pick = (next: Mode) => {
     setMode(next);
-    localStorage.setItem('app.mode', next);
+    try { localStorage.setItem('app.mode', next); } catch { /* 학습 화면에서 저장 실패를 안내합니다. */ }
   };
 
   return (
     <div className="shell">
       <nav className="shell-tabs">
+        <button className={mode === 'bible' ? 'is-on' : ''} onClick={() => pick('bible')}>
+          {t.navBible}
+        </button>
         <button className={mode === 'translate' ? 'is-on' : ''} onClick={() => pick('translate')}>
           {t.navTranslate}
         </button>
@@ -53,7 +62,7 @@ function Shell() {
         <LangToggle />
       </nav>
       <div className="shell-body">
-        {mode === 'translate' ? <App /> : <PrompterApp />}
+        {mode === 'bible' ? <BibleStudy /> : mode === 'translate' ? <App /> : <PrompterApp />}
       </div>
     </div>
   );

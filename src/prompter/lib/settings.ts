@@ -6,7 +6,7 @@ import type { Gender, Tone } from './tts/voiceMap';
  * 저장된 설정이 기본값을 영원히 덮는 문제를 막는다 — 예전 버전에서 저장된 값은
  * 새 기본값으로 한 번 초기화된다.
  */
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 4;
 
 export type PrompterSettings = {
   /** 이 설정이 어느 기본값 세대에서 저장됐는가 */
@@ -65,17 +65,25 @@ export function loadSettings(): PrompterSettings {
     if (!raw) return DEFAULT_SETTINGS;
 
     // 저장된 뒤에 필드가 늘어났을 수 있으므로 기본값 위에 덮어쓴다
-    const stored = JSON.parse(raw) as Partial<PrompterSettings> & {
+    const stored = JSON.parse(raw) as Omit<Partial<PrompterSettings>, 'engine'> & {
+      engine?: PrompterSettings['engine'] | 'google';
       showPinyin?: boolean;
       chineseOnly?: boolean;
     };
 
-    // 기본값이 바뀌었다면 저장된 값이 그것을 덮지 않게 한 번 새로 시작한다
-    if (stored.version !== SETTINGS_VERSION) {
+    // v3의 Google 실험 선택만 Edge로 옮기고 나머지 사용자 설정은 보존한다.
+    // 더 오래된 설정은 기존 정책대로 새 기본값에서 시작한다.
+    if (stored.version !== SETTINGS_VERSION && stored.version !== 3) {
       saveSettings(DEFAULT_SETTINGS);
       return DEFAULT_SETTINGS;
     }
-    const merged = { ...DEFAULT_SETTINGS, ...stored };
+    const merged = {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      version: SETTINGS_VERSION,
+      engine: stored.engine === 'local' ? 'local' as const : 'edge' as const,
+    };
+    delete (merged as { googleVoiceId?: string }).googleVoiceId;
 
     // 예전에는 병음이 켬/끔뿐이었다 — 켜져 있었다면 아래 한 줄로 옮긴다
     if (stored.pinyinMode === undefined && stored.showPinyin) merged.pinyinMode = 'below';
@@ -91,6 +99,7 @@ export function loadSettings(): PrompterSettings {
     delete (merged as { chineseOnly?: boolean }).chineseOnly;
     delete (merged as { showPinyin?: boolean }).showPinyin;
 
+    if (stored.version === 3) saveSettings(merged);
     return merged;
   } catch {
     return DEFAULT_SETTINGS;
