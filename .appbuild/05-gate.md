@@ -202,6 +202,7 @@ F16 구현 완료로 보고하지 않습니다.
 | P01 | Edge 요청 지연이 설정된 시간 후 끝나고 폴백/오류로 전환됨 | PENDING |
 | P02 | 기기 음성 `onstart` 누락 시 즉시 재생 상태로 전환되고, 시작 실패 시 제한 시간 후 오류 처리됨 | PENDING |
 | P03 | 다음 절 선택 후 이전 응답이 현재 문장을 덮어쓰지 않음 | PENDING |
-| P04 | test/build/check:i18n/lint/diff/app:build 실제 결과 기록 | PENDING |
+| P04 | test/build/check:i18n/lint/diff/app:build 실제 결과 기록 | PASS — 138개 테스트, TypeScript/Vite 및 macOS app:build, i18n, 변경 파일 ESLint, diff 검사 통과. 66권 JSON으로 인한 기존 번들 크기 경고는 남음 |
+| P05 | 절 클릭과 자동 진행으로 커서가 저장되어도 낭독 컨트롤러가 유지되고 다음 절에서 실제 읽기 상태로 전환됨 | 부분 검증 — 재빌드 앱에서 기기 음성 1→2절 수동 전환 뒤 5절까지 자동 진행, Edge 음성 1→2절 자동 진행 및 정지 확인. 스피커 청음은 수행하지 못함 |
 
 **현재: F21 기획 반영 / 구현·독립 검증 PENDING.**

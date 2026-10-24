@@ -161,10 +161,10 @@ export function BibleStudy() {
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
-  const activeChapter = chapterFor(selectedBook, selectedChapter);
+  const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
   const activeBookName = selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook);
   const passageRange = (p: Passage) => `${activeBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
-  const passages = partition(activeChapter, data.mode);
+  const passages = useMemo(() => partition(activeChapter, data.mode), [activeChapter, data.mode]);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
   const passage = passages[passageIndex];
   const selectedKo = localBibles.ko.find(item => item.translation === selectedVersions.ko);
