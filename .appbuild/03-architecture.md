@@ -477,3 +477,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F29 architecture — 준비된 오디오 재사용
 
 `SentencePlayer.prefetch`는 Edge 합성 promise가 완료되면 별도의 `Audio` 객체를 만들고 `preload=auto`, `load()`를 호출합니다. `play`는 같은 문장·음성 설정 키의 준비된 객체를 소비하고, 요청 ID 검사로 늦은 준비 결과를 무시합니다. 기기 음성은 OS 엔진이 관리하므로 이 최적화의 대상이 아닙니다.
+
+## F30 architecture — 저장된 단락에서 선택 복원
+
+`StudyData.passageId`의 `version:book:chapter:start-end` 구조에서 책 ID와 장 번호를 읽어 `BibleStudy`의 초기 `selectedBook`·`selectedChapter`를 정합니다. 책·장 검증에 실패하면 `MRK`·`1`로 되돌립니다. 별도 저장 키를 추가하지 않아 기존 저장 데이터와 호환합니다.

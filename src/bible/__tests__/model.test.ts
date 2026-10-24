@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chapter, partition, passagesForAllBooks, sentencesFor, type Chapter } from '../model';
+import { chapter, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, type Chapter } from '../model';
 
 const numbered = (n: number): Chapter => ({ ...chapter, verses: Array.from({ length: n }, (_, i) => ({ number: i + 1, text: '你好。' })), headings: [] });
 describe('Bible passage boundaries and source integrity', () => {
@@ -50,5 +50,10 @@ describe('Bible passage boundaries and source integrity', () => {
     expect(five.length).toBeGreaterThan(story.length);
     expect(new Set(story.map(item => item.id)).size).toBe(story.length);
     expect(story.some(item => item.id.includes(':MAT:1:'))).toBe(true);
+  });
+  it('restores a valid book and chapter from a saved passage id', () => {
+    expect(selectionForPassageId('cmn-cu89s:JHN:3:1-5')).toEqual({ book: 'JHN', chapter: 3 });
+    expect(selectionForPassageId('invalid')).toEqual({ book: 'MRK', chapter: 1 });
+    expect(selectionForPassageId('cmn-cu89s:JHN:999:1-5')).toEqual({ book: 'MRK', chapter: 1 });
   });
 });

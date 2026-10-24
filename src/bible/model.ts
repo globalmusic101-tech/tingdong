@@ -15,6 +15,13 @@ type FullBible = { version: string; books: { id: string; name: string; chapters:
 type ContextCatalog = { version: number; source: string; books: Record<string, Record<string, { start: number; end: number; title: string; key: string }[]>> };
 export const bibleBooks = (fullRaw as FullBible).books;
 const contextHeadings = contextRaw as ContextCatalog;
+export function selectionForPassageId(id: string): { book: string; chapter: number } {
+  const [, bookId, chapterValue] = id.split(':');
+  const chapter = Number(chapterValue);
+  const book = bibleBooks.find(item => item.id === bookId);
+  if (book && Number.isInteger(chapter) && book.chapters.some(item => item.chapter === chapter)) return { book: bookId, chapter };
+  return { book: 'MRK', chapter: 1 };
+}
 export function chapterFor(bookId: string, number: number): Chapter {
   if (bookId === chapter.book && number === chapter.chapter) return chapter;
   const book = bibleBooks.find(item => item.id === bookId);

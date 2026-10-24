@@ -292,3 +292,14 @@ F16 구현 완료로 보고하지 않습니다.
 | X04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F29 기획·구현·독립 검증 완료.**
+
+## F30 독립 게이트 — 마지막 성경 위치 복원
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| Y01 | 마지막 저장 단락의 책·장 복원 | PASS — 저장된 `passageId`에서 책 ID와 장 번호를 복원 |
+| Y02 | 유효하지 않은 저장값의 마가복음 1장 fallback | PASS — 잘못된 ID·없는 장을 MRK 1장으로 되돌리는 테스트 통과 |
+| Y03 | 저장 단락·문장 커서와 화면 선택 일치 | PASS — 기존 `passageId`·`sentenceId` 저장 구조를 유지한 초기 선택 복원 |
+| Y04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 143개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F30 기획·구현·독립 검증 완료.**
