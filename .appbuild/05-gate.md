@@ -271,3 +271,13 @@ F16 구현 완료로 보고하지 않습니다.
 | V04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F27 기획·구현·독립 검증 완료.**
+
+## F28 독립 게이트 — 영어 화면의 성경 책 이름
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| W01 | 영어 UI의 책 선택·진도 표에 영어 책 이름 표시 | PASS — 66권 ID별 영어 이름 매핑과 공통 표시 함수 연결 |
+| W02 | 현재 책 제목·단락 범위의 언어 일치 | PASS — 선택 목록·진도 표·현재 범위에서 동일 함수 사용 |
+| W03 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F28 기획·구현·독립 검증 완료.**

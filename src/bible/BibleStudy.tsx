@@ -171,7 +171,7 @@ export function BibleStudy() {
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
-  const activeBookName = selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook);
+  const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook));
   const passageRange = (p: Passage) => `${activeBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
   const passages = useMemo(() => partition(activeChapter, data.mode), [activeChapter, data.mode]);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
@@ -190,8 +190,8 @@ export function BibleStudy() {
   const progressRows = useMemo(() => bibleBooks.map(book => {
     const bookPassages = book.chapters.flatMap(item => partition(chapterFor(book.id, item.chapter), data.mode));
     const done = bookPassages.filter(item => data.completed.includes(item.id)).length;
-    return { ...book, done, total: bookPassages.length };
-  }), [data.completed, data.mode]);
+    return { ...book, displayName: t.bibleBookName(book.id, book.name), done, total: bookPassages.length };
+  }), [data.completed, data.mode, t]);
   const progressTotal = useMemo(() => {
     const all = passagesForAllBooks(data.mode);
     return { done: all.filter(item => data.completed.includes(item.id)).length, total: all.length };
@@ -282,7 +282,7 @@ export function BibleStudy() {
       </tr></thead><tbody>{progressRows.map(row => {
         const percent = row.total ? Math.round(row.done / row.total * 100) : 0;
         return <tr key={row.id} className={row.id === selectedBook ? 'is-current' : undefined}>
-          <th scope="row">{row.name}</th><td>{row.chapters.length}</td><td>{row.done}</td><td>{row.total}</td><td>{percent}%</td>
+          <th scope="row">{row.displayName}</th><td>{row.chapters.length}</td><td>{row.done}</td><td>{row.total}</td><td>{percent}%</td>
         </tr>;
       })}</tbody></table></div>
     </section>
@@ -290,7 +290,7 @@ export function BibleStudy() {
       <aside className="bible-sidebar">
         <h2>{t.bibleLibrary}</h2>
         <label className="bible-division">{t.bibleBookSelect}<select value={selectedBook} onChange={e => selectChapter(e.target.value, 1)}>
-          {bibleBooks.map(book => <option key={book.id} value={book.id}>{book.name}</option>)}
+          {bibleBooks.map(book => <option key={book.id} value={book.id}>{t.bibleBookName(book.id, book.name)}</option>)}
         </select></label>
         <label className="bible-division">{t.bibleChapterSelect}<select value={selectedChapter} onChange={e => selectChapter(selectedBook, Number(e.target.value))}>
           {(bibleBooks.find(book => book.id === selectedBook)?.chapters ?? []).map(item => <option key={item.chapter} value={item.chapter}>{t.bibleChapter(item.chapter)}</option>)}

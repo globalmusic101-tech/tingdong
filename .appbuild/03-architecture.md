@@ -469,3 +469,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F27 architecture — 전권 진도 집계
 
 `passagesForAllBooks(mode)`가 66권·전체 장을 현재 분할 방식으로 변환해 진도 표의 행을 만듭니다. `StudyData.completed`의 단락 ID를 이 전권 목록으로 검증하므로 마가복음 1장 밖에서 완료한 기록도 저장·복원됩니다. 표는 `data.completed`와 `data.mode`를 기준으로 메모화합니다.
+
+## F28 architecture — 언어별 책 이름
+
+책 ID를 기준으로 `i18n.ts`의 영어 책 이름 표를 조회합니다. `BibleStudy`는 책 선택 목록·진도 표·현재 범위에 같은 `bibleBookName` 함수를 사용하고, 한국어 UI에서는 원본 책 이름을 유지합니다.
