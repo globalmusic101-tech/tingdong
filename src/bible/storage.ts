@@ -1,15 +1,16 @@
 import { passagesFor, sentencesFor, storyPassages, fivePassages, type Division } from './model';
 import { validWordIds } from './lessons';
+import type { Gender, Tone } from '../prompter/lib/tts/voiceMap';
 
 export const STUDY_KEY = 'tingdong.bible.v1';
 export type LearningView = 'read' | 'words' | 'grammar';
 export type WordReview = 'known' | 'again';
-export type StudySettings = { pinyin: boolean; meanings: boolean; rate: number; repeats: number; gapMs: number; engine: 'edge' | 'local' };
+export type StudySettings = { pinyin: boolean; meanings: boolean; rate: number; repeats: number; gapMs: number; engine: 'edge' | 'local'; gender: Gender; tone: Tone };
 export type StudyData = { version: 1; mode: Division; passageId: string; sentenceId: string; completed: string[]; settings: StudySettings;
   learningView: LearningView; wordReviews: Record<string, WordReview> };
 export const DEFAULT_STUDY: StudyData = {
   version: 1, mode: 'story', passageId: storyPassages[0].id, sentenceId: '1:0', completed: [],
-  settings: { pinyin: true, meanings: true, rate: 0.85, repeats: 0, gapMs: 1000, engine: 'local' },
+  settings: { pinyin: true, meanings: true, rate: 0.85, repeats: 0, gapMs: 1000, engine: 'local', gender: 'female', tone: 'news' },
   learningView: 'read', wordReviews: {},
 };
 const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -34,6 +35,8 @@ export function validateStudy(value: unknown): StudyData {
       repeats: typeof s.repeats === 'number' && [0, 1, 3, 5].includes(s.repeats) ? s.repeats : 0,
       gapMs: typeof s.gapMs === 'number' && [0, 500, 1000, 2000, 3000].includes(s.gapMs) ? s.gapMs : 1000,
       engine: s.engine === 'edge' || s.engine === 'google' ? 'edge' : 'local',
+      gender: s.gender === 'male' ? 'male' : 'female',
+      tone: s.tone === 'sermon' || s.tone === 'chat' ? s.tone : 'news',
     },
   };
 }

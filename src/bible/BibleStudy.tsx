@@ -14,9 +14,11 @@ import { BilingualMeaning, GrammarPanel, VocabularyPanel } from './LearningPanel
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
 
-function passageTitle(p: Passage, t: Strings): string {
-  const translated = p.heading && t[p.heading.key as keyof Strings];
-  return typeof translated === 'string' ? translated : t.biblePassageRange(p.start, p.end);
+function passageTitle(p: Passage, t: Strings, fallback: string): string {
+  // 시범 학습의 heading 키가 다른 책에서도 마가복음 제목을 가리킬 수 있습니다.
+  // 현재 책·장 범위를 사용해 화면에서 책이 섞이지 않게 합니다.
+  void p; void t;
+  return fallback;
 }
 
 function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings }: {
@@ -50,7 +52,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       play: text => {
         const s = settingsRef.current;
         void player.play(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
-          muted: false, rate: s.rate, tone: 'news', gender: 'female' });
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender });
       },
       stop: () => player.stop(),
     }, state => {
@@ -113,6 +115,12 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
         </select></label>
         <label>{t.bibleGap}<select value={data.settings.gapMs} onChange={e => onSettings({ gapMs: Number(e.target.value) })}>
           <option value={0}>{t.bibleContinuous}</option>{[500, 1000, 2000, 3000].map(ms => <option value={ms} key={ms}>{t.bibleSeconds(ms / 1000)}</option>)}
+        </select></label>
+        <label>{t.voiceGender}<select value={data.settings.gender} onChange={e => onSettings({ gender: e.target.value as 'male' | 'female' })}>
+          <option value="male">{t.voiceMale}</option><option value="female">{t.voiceFemale}</option>
+        </select></label>
+        <label>{t.menuTone}<select value={data.settings.tone} onChange={e => onSettings({ tone: e.target.value as 'sermon' | 'news' | 'chat' })}>
+          <option value="sermon">{t.toneSermon}</option><option value="news">{t.toneNews}</option><option value="chat">{t.toneChat}</option>
         </select></label>
         <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
           onSettings({ engine: e.target.value as 'local' | 'edge' });
@@ -266,7 +274,7 @@ export function BibleStudy() {
           {passages.map((p, i) => <button key={p.id} aria-current={p.id === passage.id ? 'step' : undefined}
             className={p.id === passage.id ? 'is-current' : ''} onClick={() => go(p)}>
             <span className="bible-passage-index">{String(i + 1).padStart(2, '0')}</span>
-            <span><strong>{passageTitle(p, t)}</strong><small>{passageRange(p)}
+            <span><strong>{passageTitle(p, t, passageRange(p))}</strong><small>{passageRange(p)}
               {data.completed.includes(p.id) && <span className="bible-done"> · {t.bibleCompleted}</span>}</small></span>
           </button>)}
         </nav>
@@ -274,7 +282,7 @@ export function BibleStudy() {
       <article className="bible-reader">
         <header className="bible-passage-header">
           <p>{passageRange(passage)} <span>· {t.bibleVerseCount(passage.verses.length)}</span></p>
-          <h2>{passageTitle(passage, t)}</h2>
+          <h2>{passageTitle(passage, t, passageRange(passage))}</h2>
           <p className="bible-original-heading">{passage.heading
             ? <><span>{t.bibleSourceHeading} · </span><span lang="zh-CN">{passage.heading.title}</span></> : t.bibleFallback}</p>
         </header>
