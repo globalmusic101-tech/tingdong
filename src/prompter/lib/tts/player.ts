@@ -12,6 +12,7 @@ import type { PrompterSettings } from '../settings';
  * 배속 슬라이더가 이 값을 그대로 늘리고 줄인다.
  */
 const SILENT_BASE_CPM = 200;
+const LOCAL_START_TIMEOUT_MS = 8_000;
 
 export function silentSeconds(chars: number, rate: number): number {
   const perMinute = SILENT_BASE_CPM * rate;
@@ -52,6 +53,8 @@ export class SentencePlayer {
   private startedAt = 0;
   /** 무음 모드에서 다음 문장으로 넘길 타이머 */
   private silentTimer: number | null = null;
+  /** 기기 음성의 onstart가 오지 않는 경우 준비 상태에 영원히 머물지 않게 한다. */
+  private localStartTimer: number | null = null;
 
   constructor(private events: PlayerEvents) {
   }
@@ -88,16 +91,30 @@ export class SentencePlayer {
     const pitch = 1 + (settings.pitchPct + preset.pitchPct) / 100;
 
     this.events.onStatus('loading');
+    this.localStartTimer = window.setTimeout(() => {
+      if (id !== this.requestId) return;
+      this.localStartTimer = null;
+      this.fail('speech-start-timeout', id);
+    }, LOCAL_START_TIMEOUT_MS);
     webSpeech.speakLocal(text, rate, pitch, () => {
       if (id !== this.requestId) return;
+      this.clearLocalStartTimer();
       this.reportPace();
       this.events.onStatus('idle');
       this.events.onEnded();
     }, (reason) => this.fail(reason, id), () => {
       if (id !== this.requestId) return;
+      this.clearLocalStartTimer();
       this.beginTiming(text);
       this.events.onStatus('playing');
     });
+  }
+
+  private clearLocalStartTimer(): void {
+    if (this.localStartTimer !== null) {
+      window.clearTimeout(this.localStartTimer);
+      this.localStartTimer = null;
+    }
   }
 
   async play(text: string, settings: PrompterSettings): Promise<void> {
@@ -167,6 +184,7 @@ export class SentencePlayer {
     }
     this.audio.pause();
     this.audio.currentTime = 0;
+    this.clearLocalStartTimer();
     webSpeech.cancelLocal();
   }
 
