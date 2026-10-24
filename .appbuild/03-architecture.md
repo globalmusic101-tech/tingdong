@@ -442,4 +442,4 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 
 ## F21 architecture — 음성 요청 타임아웃과 세대 검사
 
-`synthEdge` 는 renderer 내에도 응답 타임아웃을 두어 IPC가 끝나지 않을 때 폴백으로 진입합니다. 기기 `SpeechSynthesis` 도 `onstart` 이벤트가 오지 않으면 제한 시간 후 오류로 종료합니다. `requestId`와 최신 요청 검사로 늦은 응답은 현재 문장에 적용하지 않습니다.
+`synthEdge` 는 renderer 내에도 응답 타임아웃을 두어 IPC가 끝나지 않을 때 폴백으로 진입합니다. 기기 `SpeechSynthesis` 는 `speak()` 호출이 큐에 들어간 즉시 시작 상태를 알리고, `onstart`가 오지 않아도 준비 상태에 고정되지 않게 하며, 이후 오류 이벤트는 그대로 오류로 처리합니다. `requestId`와 최신 요청 검사로 늦은 응답은 현재 문장에 적용하지 않습니다.

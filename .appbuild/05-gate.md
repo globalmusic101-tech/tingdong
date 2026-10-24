@@ -200,7 +200,7 @@ F16 구현 완료로 보고하지 않습니다.
 | ID | 필수 검증 | 결과 |
 |---|---|---|
 | P01 | Edge 요청 지연이 설정된 시간 후 끝나고 폴백/오류로 전환됨 | PENDING |
-| P02 | 기기 음성 `onstart` 누락 시 준비 상태가 타임아웃됨 | PENDING |
+| P02 | 기기 음성 `onstart` 누락 시 즉시 재생 상태로 전환되고, 시작 실패 시 제한 시간 후 오류 처리됨 | PENDING |
 | P03 | 다음 절 선택 후 이전 응답이 현재 문장을 덮어쓰지 않음 | PENDING |
 | P04 | test/build/check:i18n/lint/diff/app:build 실제 결과 기록 | PENDING |
 

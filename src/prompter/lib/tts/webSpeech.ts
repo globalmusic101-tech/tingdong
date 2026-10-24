@@ -38,10 +38,19 @@ export function speakLocal(
   utterance.voice = voice;
 
   utterance.onend = onEnd;
-  utterance.onstart = onStart;
+  let started = false;
+  const startOnce = () => {
+    if (started) return;
+    started = true;
+    onStart();
+  };
+  utterance.onstart = startOnce;
   utterance.onerror = (event) => onError(event.error || 'speech-error');
 
   window.speechSynthesis.speak(utterance);
+  // Electron/macOS에서는 speak()가 성공해도 onstart가 늦거나 누락될 수 있습니다.
+  // 호출이 큐에 들어간 즉시 재생 상태로 전환해 '준비 중'에 고정되지 않게 합니다.
+  startOnce();
 }
 
 export function cancelLocal(): void {

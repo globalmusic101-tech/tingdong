@@ -31,4 +31,10 @@ describe('local voice failures are not completions', () => {
     speakLocal('你好',1,1,ended,failed); spoken.onend();
     expect(ended).toHaveBeenCalledOnce(); expect(spoken.voice).toEqual(voices[0]);
   });
+
+  it('starts immediately when the platform omits onstart', () => {
+    const started = vi.fn();
+    speakLocal('你好', 1, 1, vi.fn(), vi.fn(), started);
+    expect(started).toHaveBeenCalledOnce();
+  });
 });
