@@ -281,3 +281,14 @@ F16 구현 완료로 보고하지 않습니다.
 | W03 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F28 기획·구현·독립 검증 완료.**
+
+## F29 독립 게이트 — 연속 전환 오디오 준비
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| X01 | 다음 음성 합성 후 오디오 객체 preload | PASS — 프리페치 완료 후 `Audio` 객체 생성, `preload=auto`, `load()` 호출 및 테스트 확인 |
+| X02 | 준비된 오디오 객체 재사용과 기존 폴백 | PASS — 동일 키의 준비 객체를 재생에서 소비하고 미준비 시 기존 합성 경로 사용 |
+| X03 | 정지·문장 변경·늦은 응답 회귀 | PASS — 기존 requestId 취소·늦은 응답·폴백 테스트와 preload 재사용 테스트 통과 |
+| X04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 142개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F29 기획·구현·독립 검증 완료.**

@@ -44,7 +44,7 @@ export class SentencePlayer {
   private requestId = 0;
   private edgeFailure: string | null = null;
   /** 다음 문장의 합성 요청을 문장·음성 설정별로 보관합니다. */
-  private prefetched = new Map<string, Promise<string>>();
+  private prefetched = new Map<string, Promise<HTMLAudioElement>>();
 
   /** 사용자가 음성 설정을 바꾼 뒤에만 실패한 온라인 엔진을 다시 시도합니다. */
   resetFallback(): void { this.edgeFailure = null; }
@@ -84,14 +84,22 @@ export class SentencePlayer {
     return settings.engine === 'local' || (settings.engine === 'edge' && (!hasEdgeBridge() || this.edgeFailure !== null));
   }
 
-  private edgeUrl(params: SynthParams): Promise<string> {
+  private prepareAudio(url: string): HTMLAudioElement {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = url;
+    audio.load();
+    return audio;
+  }
+
+  private edgeAudio(params: SynthParams): Promise<HTMLAudioElement> {
     const key = cacheKey(params);
     const pending = this.prefetched.get(key);
     if (pending) {
       this.prefetched.delete(key);
       return pending;
     }
-    return synthEdge(params);
+    return synthEdge(params).then(url => this.prepareAudio(url));
   }
 
   private playLocal(text: string, settings: PrompterSettings, id: number): void {
@@ -138,18 +146,18 @@ export class SentencePlayer {
 
     this.events.onStatus('loading');
     try {
-      const url = await this.edgeUrl(buildParams(text, settings));
+      const audio = await this.edgeAudio(buildParams(text, settings));
       if (id !== this.requestId) return; // 그 사이 다른 문장으로 넘어갔다
 
-      this.audio.src = url;
-      this.audio.onended = () => {
+      this.audio = audio;
+      audio.onended = () => {
         if (id !== this.requestId) return;
         this.reportPace();
         this.events.onStatus('idle');
         this.events.onEnded();
       };
-      this.audio.onerror = () => this.fail('audio-playback-error', id);
-      await this.audio.play();
+      audio.onerror = () => this.fail('audio-playback-error', id);
+      await audio.play();
       if (id !== this.requestId) return;
       this.beginTiming(text);
       this.events.onStatus('playing');
@@ -170,7 +178,7 @@ export class SentencePlayer {
     const params = buildParams(text, settings);
     const key = cacheKey(params);
     if (this.prefetched.has(key)) return;
-    const pending = synthEdge(params);
+    const pending = synthEdge(params).then(url => this.prepareAudio(url));
     this.prefetched.set(key, pending);
     void pending.catch(() => {
       if (this.prefetched.get(key) === pending) this.prefetched.delete(key);

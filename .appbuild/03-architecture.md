@@ -473,3 +473,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F28 architecture — 언어별 책 이름
 
 책 ID를 기준으로 `i18n.ts`의 영어 책 이름 표를 조회합니다. `BibleStudy`는 책 선택 목록·진도 표·현재 범위에 같은 `bibleBookName` 함수를 사용하고, 한국어 UI에서는 원본 책 이름을 유지합니다.
+
+## F29 architecture — 준비된 오디오 재사용
+
+`SentencePlayer.prefetch`는 Edge 합성 promise가 완료되면 별도의 `Audio` 객체를 만들고 `preload=auto`, `load()`를 호출합니다. `play`는 같은 문장·음성 설정 키의 준비된 객체를 소비하고, 요청 ID 검사로 늦은 준비 결과를 무시합니다. 기기 음성은 OS 엔진이 관리하므로 이 최적화의 대상이 아닙니다.

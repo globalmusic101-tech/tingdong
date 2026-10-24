@@ -7,7 +7,7 @@ vi.mock('../webSpeech', () => ({ speakLocal: mock.local, cancelLocal: mock.cance
 class FakeAudio {
   static latest: FakeAudio;
   src = ''; currentTime = 0; onended?: () => void; onerror?: () => void;
-  play = vi.fn().mockResolvedValue(undefined); pause = vi.fn();
+  preload = ''; load = vi.fn(); play = vi.fn().mockResolvedValue(undefined); pause = vi.fn();
   constructor() { FakeAudio.latest = this; }
 }
 const events = () => ({ onStatus: vi.fn(), onEnded: vi.fn(), onFallback: vi.fn(), onPace: vi.fn(), onError: vi.fn() });
@@ -65,6 +65,7 @@ describe('SentencePlayer cancellation and failure', () => {
     p.prefetch('다음 문장', DEFAULT_SETTINGS);
     await p.play('다음 문장', DEFAULT_SETTINGS);
     expect(mock.synth).toHaveBeenCalledOnce();
+    expect(FakeAudio.latest.load).toHaveBeenCalledOnce();
     expect(FakeAudio.latest.play).toHaveBeenCalledOnce();
   });
 });
