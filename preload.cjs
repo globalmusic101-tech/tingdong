@@ -24,5 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   setStorageItem: (key, value) => {
     localStorage.setItem(key, value);
-  }
+  },
+  importLocalKoreanBible: () => ipcRenderer.invoke('bible:import-local-korean'),
+  loadLocalKoreanBible: () => ipcRenderer.invoke('bible:load-local-korean')
 });

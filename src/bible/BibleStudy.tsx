@@ -9,6 +9,7 @@ import { chapter, passagesFor, sentencesFor, type Division, type Passage } from 
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
+import { mergeLocalKoreanBible, validateLocalKoreanBible, type LocalKoreanBible } from './localSource';
 import { BilingualMeaning, GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
@@ -18,8 +19,8 @@ function passageTitle(p: Passage, t: Strings): string {
   return typeof translated === 'string' ? translated : t.biblePassageRange(p.start, p.end);
 }
 
-function StudySession({ passage, data, onCursor, onStopReady, onSettings }: {
-  passage: Passage; data: StudyData; onCursor: (id: string) => void;
+function StudySession({ passage, data, meanings, onCursor, onStopReady, onSettings }: {
+  passage: Passage; data: StudyData; meanings: typeof verseMeanings; onCursor: (id: string) => void;
   onStopReady: (stop: (() => void) | null) => void; onSettings: (patch: Partial<StudySettings>) => void;
 }) {
   const { t } = useLang();
@@ -135,8 +136,8 @@ function StudySession({ passage, data, onCursor, onStopReady, onSettings }: {
             {data.settings.pinyin ? readings[i].map(({ char, sound }, n) => sound
               ? <ruby key={n}>{char}<rt>{sound}</rt></ruby> : <span key={n}>{char}</span>) : line.text}
           </button>)}
-          {data.settings.meanings && (verseMeanings[verse.number]
-            ? <BilingualMeaning meaning={verseMeanings[verse.number]} />
+          {data.settings.meanings && (meanings[verse.number]
+            ? <BilingualMeaning meaning={meanings[verse.number]} />
             : <p role="alert">{t.bibleMeaningMissing}</p>)}
         </div>
       </div>)}
@@ -149,10 +150,13 @@ export function BibleStudy() {
   const [loaded] = useState(loadStudy);
   const [data, setData] = useState(loaded.data);
   const [storageFailed, setStorageFailed] = useState(loaded.failed);
+  const [localBible, setLocalBible] = useState<LocalKoreanBible | null>(null);
+  const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const passages = passagesFor(data.mode);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
   const passage = passages[passageIndex];
+  const meanings = useMemo(() => localBible ? mergeLocalKoreanBible(localBible) : verseMeanings, [localBible]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
@@ -162,6 +166,24 @@ export function BibleStudy() {
     setData(d => ({ ...d, settings: { ...d.settings, ...patch } }));
   };
   useEffect(() => { if (!saveStudy(data)) setStorageFailed(true); }, [data]);
+  useEffect(() => {
+    const load = window.electronAPI?.loadLocalKoreanBible;
+    if (!load) return;
+    void load().then(result => {
+      if (!result?.ok || !result.data) return;
+      const checked = validateLocalKoreanBible(result.data);
+      if (checked.ok) setLocalBible(checked.data);
+    });
+  }, []);
+  const importLocalBible = useCallback(async () => {
+    const result = await window.electronAPI?.importLocalKoreanBible?.();
+    if (!result || result.code === 'cancelled') return;
+    if (!result.ok || !result.data) { setLocalBibleMessage(result.error ?? t.bibleLocalBibleInvalid); return; }
+    const checked = validateLocalKoreanBible(result.data);
+    if (!checked.ok) { setLocalBibleMessage(t.bibleLocalBibleInvalid); return; }
+    setLocalBible(checked.data);
+    setLocalBibleMessage(null);
+  }, [t]);
   const go = (p: Passage, mark = false) => {
     stopRef.current?.();
     if (p.id === passage.id) return;
@@ -227,7 +249,7 @@ export function BibleStudy() {
         </nav>
         <p className="bible-meaning-note">{t.bibleMeaningNote}</p>
         <div hidden={data.learningView !== 'read'}>
-          <StudySession key={`${data.mode}:${passage.id}`} passage={passage} data={data} onCursor={cursor}
+          <StudySession key={`${data.mode}:${passage.id}`} passage={passage} data={data} meanings={meanings} onCursor={cursor}
             onStopReady={stopReady} onSettings={settings} />
         </div>
         {data.learningView === 'words' && <VocabularyPanel key={passage.id} items={lesson.words} reviews={data.wordReviews} onReview={reviewWord} />}
@@ -244,6 +266,11 @@ export function BibleStudy() {
           {last && <p className="bible-note">{t.bibleLast}</p>}
         </footer>
         <details className="bible-about"><summary>{t.bibleAbout}</summary><p>{t.bibleAboutText}</p><p>{t.biblePinyinNotice}</p>
+          <div className="bible-local-source"><strong>{t.bibleLocalBibleTitle}</strong><p>{t.bibleLocalBibleDescription}</p>
+            <button onClick={() => void importLocalBible()} disabled={!window.electronAPI?.importLocalKoreanBible}>{t.bibleLocalBibleImport}</button>
+            <p>{localBible ? t.bibleLocalBibleReady(localBible.name) : t.bibleLocalBibleMissing}</p>
+            {localBibleMessage && <p className="bible-alert" role="alert">{localBibleMessage}</p>}
+          </div>
           <p><a href={chapter.source} target="_blank" rel="noreferrer">{t.bibleContentSource}</a> · <a href="https://ebible.org/kor/MRK01.htm" target="_blank" rel="noreferrer">Korean Bible 1910</a> · <a href="https://ebible.org/eng-web/MRK01.htm" target="_blank" rel="noreferrer">World English Bible Classic</a> · <a href="https://ebible.org/cmn-cu89s/copyright.htm" target="_blank" rel="noreferrer">{t.bibleLicense}</a></p>
         </details>
         <p className="bible-pinyin-footnote">{t.biblePinyinNotice}</p>

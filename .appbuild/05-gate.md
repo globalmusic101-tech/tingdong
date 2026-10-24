@@ -147,3 +147,15 @@ Edge 유지보수 E01~E08의 기존 증거는 그대로 보존합니다. Google 
 
 **현재: F16 기획 문서 반영 / 구현·독립 검증 PENDING.** 이 표의 PENDING을 PASS로 바꾸기 전에는
 F16 구현 완료로 보고하지 않습니다.
+
+## F17 독립 게이트 — 개인용 새한글성경 로컬 불러오기
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| L01 | JSON version/판본/Mark 1/정확히 45절 검증과 잘못된 파일 거부 | PENDING |
+| L02 | userData 저장·재실행 로드·기본 판본 fallback | PENDING |
+| L03 | 본문이 git·dist·app 패키지에 포함되지 않고 네트워크 요청도 없음 | PENDING |
+| L04 | 로컬 한국어와 기존 영어 뜻의 병렬 표시 및 ko/en UI | PENDING |
+| L05 | 전체 검사와 app:build 실제 결과 | PENDING |
+
+**현재: F17 기획 반영 / 구현·독립 검증 PENDING.**

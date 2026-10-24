@@ -65,6 +65,9 @@
 .bible-about summary { cursor: pointer; }
 .bible-about p { margin-top: 10px; line-height: 1.8; }
 .bible-about a { color: var(--study-accent); }
+.bible-local-source { margin-top: 14px; padding: 12px; border: 1px solid #dfe8df; border-radius: 8px; background: #f8fbf7; }
+.bible-local-source p { margin: 7px 0; }
+.bible-local-source .bible-alert { margin: 8px 0 0; }
 .bible-pinyin-footnote { font-size: 11px; color: #839087; margin-top: 10px; }
 .bible-alert { background: #fff5e9; border: 1px solid #e5d2b8; color: #805628; font-size: 13px; border-radius: 8px; padding: 12px 16px; margin: 12px auto; max-width: 1340px; line-height: 1.6; }
 @media(max-width: 900px) {

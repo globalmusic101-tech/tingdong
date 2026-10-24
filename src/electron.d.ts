@@ -15,6 +15,8 @@ export type ElectronAPI = {
   requestAccessibility?: () => void;
   /** 번역기 탭의 엔진 설정을 팝업 창에도 넘겨준다 */
   syncEngineConfig?: (cfg: EngineConfig) => void;
+  importLocalKoreanBible?: () => Promise<{ ok: boolean; code?: string; error?: string; data?: unknown }>;
+  loadLocalKoreanBible?: () => Promise<{ ok: boolean; code?: string; error?: string; data?: unknown }>;
 };
 
 declare global {

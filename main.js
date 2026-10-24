@@ -1,6 +1,6 @@
 import {
   app, BrowserWindow, globalShortcut, clipboard,
-  screen, Tray, Menu, ipcMain, nativeImage, systemPreferences
+  screen, Tray, Menu, ipcMain, nativeImage, systemPreferences, dialog
 } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { exec, spawn } from 'child_process';
 import { pinyin } from 'pinyin-pro';
 import { registerTtsBridge } from './electron/ttsBridge.js';
+import { validateLocalKoreanBible } from './electron/localBible.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -295,6 +296,37 @@ ipcMain.on('request-accessibility', () => {
   if (process.platform === 'darwin') {
     systemPreferences.isTrustedAccessibilityClient(true);
   }
+});
+
+function localKoreanBiblePath() {
+  return path.join(app.getPath('userData'), 'private-bible', 'saehangul-mark1.json');
+}
+
+function readLocalKoreanBible() {
+  try {
+    const file = localKoreanBiblePath();
+    if (!fs.existsSync(file)) return { ok: false, code: 'not-found' };
+    const result = validateLocalKoreanBible(JSON.parse(fs.readFileSync(file, 'utf8')));
+    return result.ok ? result : { ok: false, code: 'invalid', error: result.error };
+  } catch { return { ok: false, code: 'invalid', error: 'Unable to read the local Bible file' }; }
+}
+
+ipcMain.handle('bible:load-local-korean', () => readLocalKoreanBible());
+ipcMain.handle('bible:import-local-korean', async () => {
+  const picked = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'], filters: [{ name: 'Tingdong Bible JSON', extensions: ['json'] }],
+  });
+  if (picked.canceled || !picked.filePaths[0]) return { ok: false, code: 'cancelled' };
+  try {
+    const result = validateLocalKoreanBible(JSON.parse(fs.readFileSync(picked.filePaths[0], 'utf8')));
+    if (!result.ok) return { ok: false, code: 'invalid', error: result.error };
+    const dir = path.dirname(localKoreanBiblePath());
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const temporary = `${localKoreanBiblePath()}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(result.data), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(temporary, localKoreanBiblePath());
+    return result;
+  } catch { return { ok: false, code: 'invalid', error: 'The selected file is not valid JSON' }; }
 });
 
 // ── 앱 초기화 ───────────────────────────────────────────────────

@@ -201,3 +201,9 @@ E4: 2.1.0 실패와 Python 7.3.1 성공을 별도 기록하고, v2 JS 호환 어
 3. H3: 반복 저장 validator와 화면 선택지에 1회를 추가하고, 유한 반복 종료 후 다음 문장으로 진행하는 controller 규칙을 구현합니다.
 4. H4: fake timer로 1/3/5회, 계속 반복, 다음 문장 count 초기화, 마지막 문장 정지, 정지·선택 취소를 검사하고 기존 테스트를 회귀 실행합니다.
 5. H5: typecheck/test/i18n/변경 파일 lint/diff/build를 실행하고 성경 화면에서 양언어 출처와 반복 진행을 확인합니다. 실제 앱 패키징과 사람 청음은 수행 여부를 별도로 기록합니다.
+
+# F17 작업 — 개인용 새한글성경 로컬 불러오기
+
+1. L1: 새한글성경 JSON 형식과 정확한 절 집합을 renderer/main 양쪽에서 검증합니다.
+2. L2: Electron 파일 선택·userData 저장·재실행 로드 IPC와 기본 판본 fallback을 검사합니다.
+3. L3: i18n 문구와 로컬 상태 UI를 추가하고 test/build/check:i18n/lint/diff/app:build를 실행합니다.

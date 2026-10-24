@@ -409,6 +409,12 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 
 ---
 
+# F17 architecture — 개인 로컬 번역문
+
+- `src/bible/localSource.ts`가 새한글성경 JSON의 version 1, `saehangul-2025`, Mark 1, 정확히 45절을 검증하고 영어 기존 뜻과 로컬 한국어 절을 합칩니다.
+- `main.js`의 파일 선택 IPC만 원본 경로를 읽고 앱 전용 userData/private-bible에 저장합니다. preload는 검증 결과만 renderer에 전달하며 본문을 네트워크 요청하지 않습니다.
+- 파일이 없거나 검증에 실패하면 기본 한국어 성경 1910을 사용합니다. 저장소와 패키징 입력에는 본문 파일을 만들지 않습니다.
+
 # F16 architecture — 번역문 소스와 반복 진행
 
 - `src/bible/lessons.ts`의 `verseMeanings`는 앱 번역 결과가 아니라 고정된 기존 번역문 데이터입니다.
