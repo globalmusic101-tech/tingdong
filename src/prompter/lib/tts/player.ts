@@ -1,6 +1,6 @@
 import { synthEdge } from './edgeTts';
 import * as webSpeech from './webSpeech';
-import { hasEdgeBridge, type SynthParams } from './types';
+import { cacheKey, hasEdgeBridge, type SynthParams } from './types';
 import { resolveVoice, toPitchString, toRateString } from './voiceMap';
 import { hanCount } from '../extractChinese';
 import { charsPerMinute } from './pace';
@@ -43,6 +43,8 @@ export class SentencePlayer {
   /** 매 재생 요청마다 증가. 늦게 도착한 응답을 버리는 기준. */
   private requestId = 0;
   private edgeFailure: string | null = null;
+  /** 다음 문장의 합성 요청을 문장·음성 설정별로 보관합니다. */
+  private prefetched = new Map<string, Promise<string>>();
 
   /** 사용자가 음성 설정을 바꾼 뒤에만 실패한 온라인 엔진을 다시 시도합니다. */
   resetFallback(): void { this.edgeFailure = null; }
@@ -80,6 +82,16 @@ export class SentencePlayer {
 
   private useLocal(settings: PrompterSettings): boolean {
     return settings.engine === 'local' || (settings.engine === 'edge' && (!hasEdgeBridge() || this.edgeFailure !== null));
+  }
+
+  private edgeUrl(params: SynthParams): Promise<string> {
+    const key = cacheKey(params);
+    const pending = this.prefetched.get(key);
+    if (pending) {
+      this.prefetched.delete(key);
+      return pending;
+    }
+    return synthEdge(params);
   }
 
   private playLocal(text: string, settings: PrompterSettings, id: number): void {
@@ -126,7 +138,7 @@ export class SentencePlayer {
 
     this.events.onStatus('loading');
     try {
-      const url = await synthEdge(buildParams(text, settings));
+      const url = await this.edgeUrl(buildParams(text, settings));
       if (id !== this.requestId) return; // 그 사이 다른 문장으로 넘어갔다
 
       this.audio.src = url;
@@ -155,7 +167,14 @@ export class SentencePlayer {
   /** 다음 문장을 미리 합성해 둔다. 실패해도 조용히 넘어간다. */
   prefetch(text: string, settings: PrompterSettings): void {
     if (!text || settings.muted || settings.engine === 'local' || (settings.engine === 'edge' && this.useLocal(settings))) return;
-    void synthEdge(buildParams(text, settings)).catch(() => {});
+    const params = buildParams(text, settings);
+    const key = cacheKey(params);
+    if (this.prefetched.has(key)) return;
+    const pending = synthEdge(params);
+    this.prefetched.set(key, pending);
+    void pending.catch(() => {
+      if (this.prefetched.get(key) === pending) this.prefetched.delete(key);
+    });
   }
 
   /** 재생만 멈춘다 (requestId는 그대로) */

@@ -40,6 +40,11 @@ describe('Study audio scheduling', () => {
     expect(p.state.count).toBe(1);
     expect(audio.play.mock.calls).toEqual([['你好。'], ['再见。']]);
   });
+  it('moves immediately when the gap is continuous', () => {
+    const { p, audio } = setup(1, 0);
+    p.select(0); p.ended();
+    expect(audio.play.mock.calls).toEqual([['你好。'], ['再见。']]);
+  });
   it('same sentence toggles off; different sentence cancels the pending old sentence', () => {
     const { p, audio } = setup(); p.select(0); p.ended(); p.select(1);
     vi.advanceTimersByTime(10000);

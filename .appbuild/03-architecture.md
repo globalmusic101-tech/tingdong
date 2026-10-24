@@ -454,6 +454,10 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 
 `LocalBible`은 현재 마가복음 1장 전용이므로 `BibleStudy`는 선택 책이 `MRK`이고 장이 `1`일 때만 `mergeLocalBibles`에 로컬 판본을 전달합니다. 다른 책·장에서는 `meaningsFor(book, chapter)`의 기본 병렬 뜻을 그대로 사용합니다.
 
+## F25 architecture — 음성 프리페치와 0초 전환
+
+`StudyPlayback`은 다음으로 넘어갈 수 있는 문장의 텍스트를 선택해 `AudioPort.prefetch`에 전달합니다. `SentencePlayer`는 Edge 합성 promise를 문장·음성·배속·음높이 키로 보관하고, 실제 재생에서 같은 promise를 소비합니다. `gapMs=0`이면 `setTimeout`을 거치지 않고 다음 문장을 즉시 요청하며, 프리페치 실패 시 `synthEdge`의 기존 경로가 처리합니다.
+
 `synthEdge` 는 renderer 내에도 응답 타임아웃을 두어 IPC가 끝나지 않을 때 폴백으로 진입합니다. 기기 `SpeechSynthesis` 는 `speak()` 호출이 큐에 들어간 즉시 시작 상태를 알리고, `onstart`가 오지 않아도 준비 상태에 고정되지 않게 하며, 이후 오류 이벤트는 그대로 오류로 처리합니다. `requestId`와 최신 요청 검사로 늦은 응답은 현재 문장에 적용하지 않습니다.
 
 `BibleStudy`의 `chapterFor` 및 `partition` 결과는 책·장·분할 모드에 맞춰 메모화합니다. `StudySession`의 낭독 컨트롤러는 `lines`가 바뀔 때 재생성되므로, 커서 저장으로 인한 부모 렌더에서 `lines` 참조가 바뀌면 진행 중인 음성이 취소됩니다. 이 참조 안정성을 유지하고 단락이 실제로 바뀔 때만 기존 컨트롤러를 정리합니다.

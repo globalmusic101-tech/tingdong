@@ -51,6 +51,11 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
           muted: false, rate: s.rate, tone: s.tone, gender: s.gender });
       },
       stop: () => player.stop(),
+      prefetch: text => {
+        const s = settingsRef.current;
+        player.prefetch(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender });
+      },
     }, state => {
       if (!live) return;
       setPlayback(state);

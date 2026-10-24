@@ -60,4 +60,11 @@ describe('SentencePlayer cancellation and failure', () => {
     p.resetFallback(); await p.play('你好',DEFAULT_SETTINGS);
     expect(mock.synth).toHaveBeenCalledTimes(2);
   });
+  it('reuses a prefetched online voice for the next sentence', async () => {
+    const e = events(), p = new SentencePlayer(e);
+    p.prefetch('다음 문장', DEFAULT_SETTINGS);
+    await p.play('다음 문장', DEFAULT_SETTINGS);
+    expect(mock.synth).toHaveBeenCalledOnce();
+    expect(FakeAudio.latest.play).toHaveBeenCalledOnce();
+  });
 });
