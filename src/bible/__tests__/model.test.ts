@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chapter, chapterFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, type Chapter } from '../model';
+import { chapter, chapterFor, headingTitle, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, type Chapter } from '../model';
 
 const numbered = (n: number): Chapter => ({ ...chapter, verses: Array.from({ length: n }, (_, i) => ({ number: i + 1, text: '你好。' })), headings: [] });
 describe('Bible passage boundaries and source integrity', () => {
@@ -72,5 +72,12 @@ describe('Bible passage boundaries and source integrity', () => {
       expect(new Set(passages.map(item => item.id)).size).toBe(passages.length);
     }
     expect(partition(chapterFor('ROM', 1), 'story').map(item => [item.start, item.end])).toEqual([[1, 7], [8, 15], [16, 17], [18, 32]]);
+  });
+  it('never reuses a Chinese heading for a non-Chinese primary language', () => {
+    const heading = { start: 1, end: 2, title: '中文标题', titleKo: '한국어 제목', titleEn: 'English title', key: '' };
+    expect(headingTitle(heading, 'zh', '범위')).toBe('中文标题');
+    expect(headingTitle(heading, 'ko', '범위')).toBe('한국어 제목');
+    expect(headingTitle(heading, 'en', 'Range')).toBe('English title');
+    expect(headingTitle({ ...heading, titleKo: undefined, titleEn: undefined }, 'ko', '범위')).toBe('범위');
   });
 });

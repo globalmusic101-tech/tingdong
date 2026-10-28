@@ -486,6 +486,10 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 
 `context-headings.json`의 `ROM` 항목을 `chapterFor('ROM', chapter)`가 주입하고, 기존 `partition(..., 'story')`가 소제목 시작 절부터 다음 소제목 직전까지 단락을 만듭니다. 로마서 회귀 테스트는 16장 전체의 절 중복·누락과 대표 장의 경계를 확인합니다.
 
+## F34 architecture — 언어별 heading과 안전한 fallback
+
+`Heading`은 `title` 중국어 원문과 선택적 `titleKo`, `titleEn`을 함께 가질 수 있습니다. `headingTitle(heading, language, range)`가 주 본문 언어에 맞는 제목을 고르고, 번역 제목이 없으면 이미 UI 언어로 만들어진 책·장·절 범위를 반환합니다. 원문 `title`은 본문 제목에 직접 사용하지 않고 출처 소제목에만 표시합니다.
+
 ## F32 architecture — 책별 학습 자료 필터
 
 `lessonFor(passage, bookId)`가 기존 마가복음 자료와 로마서 자료를 책 ID로 분리한 뒤 절 범위로 필터합니다. 로마서 자료는 `bible-full.json`의 ROM 절을 기준으로 핵심 어휘·문법 정의가 실제 원문에 등장하는 경우에만 카드로 생성합니다. `validWordIds`에는 두 책의 단어 복습 ID를 포함합니다.

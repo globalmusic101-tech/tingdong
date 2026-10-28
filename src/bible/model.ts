@@ -8,7 +8,7 @@ export type Division = 'story' | 'five';
 export type BibleLanguage = 'zh' | 'ko' | 'en';
 export type LanguageText = { ko: string; en: string };
 export type Verse = { number: number; text: string };
-export type Heading = { start: number; end: number; title: string; key: string };
+export type Heading = { start: number; end: number; title: string; titleKo?: string; titleEn?: string; key: string };
 export type Chapter = { version: string; book: string; chapter: number; source: string; verses: Verse[]; headings: Heading[] };
 export type Passage = { id: string; start: number; end: number; heading?: Heading; verses: Verse[] };
 export type StudySentence = { id: string; verse: number; text: string };
@@ -17,6 +17,12 @@ type FullBible = { version: string; books: { id: string; name: string; chapters:
 type ContextCatalog = { version: number; source: string; books: Record<string, Record<string, { start: number; end: number; title: string; key: string }[]>> };
 export const bibleBooks = (fullRaw as FullBible).books;
 const contextHeadings = contextRaw as ContextCatalog;
+export function headingTitle(heading: Heading | undefined, language: BibleLanguage, fallback: string): string {
+  if (!heading) return fallback;
+  if (language === 'ko' && heading.titleKo?.trim()) return heading.titleKo;
+  if (language === 'en' && heading.titleEn?.trim()) return heading.titleEn;
+  return language === 'zh' ? heading.title : fallback;
+}
 export function selectionForPassageId(id: string): { book: string; chapter: number } {
   const [, bookId, chapterValue] = id.split(':');
   const chapter = Number(chapterValue);

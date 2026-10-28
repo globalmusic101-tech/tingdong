@@ -4,7 +4,7 @@ import { useLang } from '../lib/i18nContext';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
-import { chapterFor, bibleBooks, meaningsFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
+import { chapterFor, bibleBooks, headingTitle, meaningsFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
@@ -13,8 +13,8 @@ import { GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
 
-function passageTitle(p: Passage, fallback: string): string {
-  return p.heading?.title || fallback;
+function passageTitle(p: Passage, language: BibleLanguage, fallback: string): string {
+  return headingTitle(p.heading, language, fallback);
 }
 
 function speechLanguage(language: BibleLanguage): 'zh-CN' | 'ko-KR' | 'en-US' {
@@ -193,6 +193,11 @@ export function BibleStudy() {
   const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
   const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook));
   const passageRange = (p: Passage) => `${activeBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
+  const primaryPassageRange = (p: Passage) => {
+    const book = bibleBooks.find(item => item.id === selectedBook);
+    const name = data.settings.primaryLanguage === 'en' ? t.bibleBookName(selectedBook, book?.name ?? selectedBook) : (book?.name ?? activeBookName);
+    return `${name} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
+  };
   const passages = useMemo(() => partition(activeChapter, data.mode), [activeChapter, data.mode]);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
   const passage = passages[passageIndex];
@@ -323,7 +328,7 @@ export function BibleStudy() {
           {passages.map((p, i) => <button key={p.id} aria-current={p.id === passage.id ? 'step' : undefined}
             className={p.id === passage.id ? 'is-current' : ''} onClick={() => go(p)}>
             <span className="bible-passage-index">{String(i + 1).padStart(2, '0')}</span>
-            <span><strong>{passageTitle(p, passageRange(p))}</strong><small>{passageRange(p)}
+            <span><strong>{passageTitle(p, data.settings.primaryLanguage, primaryPassageRange(p))}</strong><small>{passageRange(p)}
               {data.completed.includes(p.id) && <span className="bible-done"> · {t.bibleCompleted}</span>}</small></span>
           </button>)}
         </nav>
@@ -331,7 +336,7 @@ export function BibleStudy() {
       <article className="bible-reader">
         <header className="bible-passage-header">
           <p>{passageRange(passage)} <span>· {t.bibleVerseCount(passage.verses.length)}</span></p>
-          <h2>{passageTitle(passage, passageRange(passage))}</h2>
+          <h2>{passageTitle(passage, data.settings.primaryLanguage, primaryPassageRange(passage))}</h2>
           <p className="bible-original-heading">{passage.heading
             ? <><span>{t.bibleSourceHeading} · </span><span lang="zh-CN">{passage.heading.title}</span></> : t.bibleFallback}</p>
         </header>

@@ -336,3 +336,23 @@ F16 구현 완료로 보고하지 않습니다.
 | AB04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 147개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F33 기획·구현·독립 검증 완료.**
+
+## F34 독립 게이트 — 언어별 단락 제목
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AC01 | 한국어·영어 주 본문 선택 시 목록·현재 제목 언어 일치 | PENDING |
+| AC02 | 번역 제목 누락 시 중국어 재사용 방지 및 범위 fallback | PENDING |
+| AC03 | 원문 소제목 출처 표시와 전체 회귀 검증 | PENDING |
+
+**현재: F34 구현 중.**
+
+## F34 독립 게이트 결과
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AC01 | 한국어·영어 주 본문 선택 시 목록·현재 제목 언어 일치 | PASS — 주 본문 언어별 제목 선택과 UI 언어별 범위 fallback 연결 |
+| AC02 | 번역 제목 누락 시 중국어 재사용 방지 및 범위 fallback | PASS — `headingTitle` 회귀 테스트에서 비중국어 fallback 확인 |
+| AC03 | 원문 소제목 출처 표시와 전체 회귀 검증 | PASS — 원문 제목은 출처 영역에 유지, 148개 테스트 및 빌드/check:i18n/lint/diff 통과 |
+
+**현재: F34 기획·구현·독립 검증 완료.**
