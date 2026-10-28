@@ -17,7 +17,7 @@ export type ElectronAPI = {
   syncEngineConfig?: (cfg: EngineConfig) => void;
   importLocalBible?: (language: 'ko' | 'en') => Promise<{ ok: boolean; code?: string; error?: string; data?: unknown }>;
   loadLocalBibles?: () => Promise<{ ko?: { ok: boolean; data?: unknown[] }; en?: { ok: boolean; data?: unknown[] } }>;
-  speakChinese?: (text: string, rate: number) => Promise<{ ok: boolean; error?: string }>;
+  speakChinese?: (text: string, rate: number, language?: string) => Promise<{ ok: boolean; error?: string }>;
   stopChinese?: () => void;
   onChineseEnded?: (callback: () => void) => () => void;
   onChineseError?: (callback: (reason?: string) => void) => () => void;

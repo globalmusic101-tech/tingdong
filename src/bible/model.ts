@@ -5,6 +5,8 @@ import fullRaw from './bible-full.json';
 import contextRaw from './context-headings.json';
 
 export type Division = 'story' | 'five';
+export type BibleLanguage = 'zh' | 'ko' | 'en';
+export type LanguageText = { ko: string; en: string };
 export type Verse = { number: number; text: string };
 export type Heading = { start: number; end: number; title: string; key: string };
 export type Chapter = { version: string; book: string; chapter: number; source: string; verses: Verse[]; headings: Heading[] };
@@ -35,6 +37,15 @@ export function meaningsFor(bookId: string, number: number): Record<number, Bili
   const found = book?.chapters.find(item => item.chapter === number);
   if (!found) return {};
   return Object.fromEntries(found.verses.map(verse => [verse.number, { ko: verse.ko, en: verse.en }]));
+}
+
+export function textForVerse(verse: Verse, language: BibleLanguage, meanings: Record<number, LanguageText>): string {
+  if (language === 'zh') return verse.text;
+  return meanings[verse.number]?.[language] ?? '';
+}
+
+export function sentencesForLanguage(passage: Passage, language: BibleLanguage, meanings: Record<number, LanguageText>): StudySentence[] {
+  return passage.verses.flatMap(v => splitSentences(textForVerse(v, language, meanings), { readMode: 'raw' }).sentences.map((s, i) => ({ id: `${v.number}:${i}`, verse: v.number, text: s.text })));
 }
 
 /** 누락된 절을 정상 단락처럼 보여주지 않습니다. */

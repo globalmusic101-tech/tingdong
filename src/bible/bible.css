@@ -113,6 +113,9 @@
 .bible-meanings > div { border-left: 2px solid #dce8df; padding-left: 12px; min-width: 0; }
 .bible-meanings > div[lang="en"] { border-left-color: #e0e5ef; }
 .bible-language-label { display: block; color: #6e8376; font-size: 10px; font-weight: 650; letter-spacing: .04em; margin-bottom: 5px; }
+.bible-secondary-text { margin: 8px 12px 8px; padding: 8px 12px; border-left: 2px solid #dce8df; color: #4f6259; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.85; }
+.bible-secondary-text[lang="en-US"] { border-left-color: #e0e5ef; color: #536477; }
+.bible-secondary-text p { margin: 0; overflow-wrap: anywhere; }
 .bible-meanings p { color: #4f6259; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.85; letter-spacing: 0; word-break: keep-all; overflow-wrap: anywhere; }
 .bible-meanings > div[lang="en"] p { color: #536477; word-break: normal; }
 .bible-learning-panel { padding: 5px 0 24px; }

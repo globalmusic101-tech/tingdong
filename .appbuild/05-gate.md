@@ -325,3 +325,14 @@ F16 구현 완료로 보고하지 않습니다.
 | AA04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 146개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F32 기획·구현·독립 검증 완료.**
+
+## F33 독립 게이트 — 성경 본문 언어 선택과 병렬 표시
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AB01 | 주 본문·보조 언어 설정 저장 및 기본값 호환 | PASS — 기존 저장 데이터에 중국어 주 본문과 한국어·영어 표시를 보충하고 저장 테스트 통과 |
+| AB02 | 중국어·한국어·영어 본문 매칭, 주 본문 중복 제외, 중국어 병음 조건 | PASS — 절 번호 기반 언어별 문장 분할·주 본문 중복 제외·중국어 병음 조건 테스트 통과 |
+| AB03 | 선택 언어의 Edge/기기 음성 전달 및 기존 낭독 회귀 | PASS — 언어별 Edge voice map, 기기 locale/음성 전달, 기존 TTS 회귀 테스트 통과 |
+| AB04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 147개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F33 기획·구현·독립 검증 완료.**

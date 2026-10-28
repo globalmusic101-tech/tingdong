@@ -19,7 +19,7 @@ export function silentSeconds(chars: number, rate: number): number {
 }
 
 export function buildParams(text: string, settings: PrompterSettings): SynthParams {
-  const preset = resolveVoice(settings.gender, settings.tone);
+  const preset = resolveVoice(settings.gender, settings.tone, settings.language);
   return {
     text,
     voiceId: preset.voiceId,
@@ -103,7 +103,7 @@ export class SentencePlayer {
   }
 
   private playLocal(text: string, settings: PrompterSettings, id: number): void {
-    const preset = resolveVoice(settings.gender, settings.tone);
+    const preset = resolveVoice(settings.gender, settings.tone, settings.language);
     const rate = settings.rate * (1 + preset.ratePct / 100);
     const pitch = 1 + (settings.pitchPct + preset.pitchPct) / 100;
 
@@ -117,7 +117,7 @@ export class SentencePlayer {
       if (id !== this.requestId) return;
       this.beginTiming(text);
       this.events.onStatus('playing');
-    });
+    }, settings.language);
   }
 
   async play(text: string, settings: PrompterSettings): Promise<void> {

@@ -1,5 +1,5 @@
 import type { ReadMode } from './extractChinese';
-import type { Gender, Tone } from './tts/voiceMap';
+import type { Gender, SpeechLanguage, Tone } from './tts/voiceMap';
 
 /**
  * 기본값을 손볼 때마다 올린다.
@@ -16,6 +16,7 @@ export type PrompterSettings = {
   muted: boolean;
   gender: Gender;
   tone: Tone;
+  language: SpeechLanguage;
   /** 0.5 ~ 1.5 */
   rate: number;
   /** -20 ~ 20 (%) */
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   muted: false,
   gender: 'male',
   tone: 'sermon',
+  language: 'zh-CN',
   rate: 1,
   pitchPct: 0,
   pinyinMode: 'above',

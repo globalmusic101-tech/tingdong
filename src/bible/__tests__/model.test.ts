@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chapter, chapterFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, type Chapter } from '../model';
+import { chapter, chapterFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, type Chapter } from '../model';
 
 const numbered = (n: number): Chapter => ({ ...chapter, verses: Array.from({ length: n }, (_, i) => ({ number: i + 1, text: '你好。' })), headings: [] });
 describe('Bible passage boundaries and source integrity', () => {
@@ -42,6 +42,13 @@ describe('Bible passage boundaries and source integrity', () => {
       }
     }
     expect(sentencesFor(partition(chapter, 'story')[3]).filter(s => s.verse === 15).length).toBe(2);
+  });
+  it('keeps translated sentence ids aligned by verse while switching the primary language', () => {
+    const passage = partition(chapter, 'story')[0];
+    const meanings = Object.fromEntries(passage.verses.map(v => [v.number, { ko: `한국어 ${v.number}입니다.`, en: `English ${v.number}.` }]));
+    expect(sentencesForLanguage(passage, 'ko', meanings).every(item => item.text.startsWith('한국어'))).toBe(true);
+    expect(sentencesForLanguage(passage, 'en', meanings).every(item => item.text.startsWith('English'))).toBe(true);
+    expect(sentencesForLanguage(passage, 'ko', meanings).map(item => item.id)).toEqual(sentencesForLanguage(passage, 'en', meanings).map(item => item.id));
   });
   it('builds complete passage catalogs for both study modes', () => {
     const story = passagesForAllBooks('story');

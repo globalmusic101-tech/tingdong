@@ -2,10 +2,11 @@
  * 오프라인·차단 시 폴백. 기기에 설치된 중국어 음성을 쓴다.
  * 톤 차이는 rate/pitch로만 근사되고, 음성 종류는 기기에 있는 것에 좌우된다.
  */
-function pickChineseVoice(): SpeechSynthesisVoice | null {
+function pickVoice(language: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis?.getVoices() ?? [];
-  return voices.find((v) => v.localService && v.lang.replace('_', '-').toLowerCase().startsWith('zh-cn'))
-    ?? voices.find((v) => v.localService && v.lang.toLowerCase().startsWith('zh'))
+  const prefix = language.toLowerCase().replace('_', '-');
+  return voices.find((v) => v.localService && v.lang.toLowerCase().startsWith(prefix))
+    ?? voices.find((v) => v.localService && v.lang.toLowerCase().startsWith(prefix.slice(0, 2)))
     ?? null;
 }
 
@@ -23,6 +24,7 @@ export function speakLocal(
   onEnd: () => void,
   onError: (reason: string) => void,
   onStart: () => void = () => {},
+  language = 'zh-CN',
 ): void {
   if (!isAvailable()) { onError('speech-unavailable'); return; }
   const api = window.electronAPI;
@@ -32,7 +34,7 @@ export function speakLocal(
     const removeEnded = api.onChineseEnded(() => { remove(); onEnd(); });
     const removeError = api.onChineseError((reason) => { remove(); onError(reason || 'speech-error'); });
     const remove = () => { removeEnded(); removeError(); };
-    void native(text, rate).then((result) => {
+    void native(text, rate, language).then((result) => {
       if (!result.ok) { remove(); onError(result.error || 'speech-error'); return; }
       onStart();
     }).catch((error) => { remove(); onError(error instanceof Error ? error.message : String(error)); });
@@ -40,11 +42,11 @@ export function speakLocal(
   }
   window.speechSynthesis.cancel();
 
-  const voice = pickChineseVoice();
-  if (!voice) { onError('chinese-voice-unavailable'); return; }
+  const voice = pickVoice(language);
+  if (!voice) { onError(language === 'zh-CN' ? 'chinese-voice-unavailable' : `${language}-voice-unavailable`); return; }
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'zh-CN';
+  utterance.lang = language;
   utterance.rate = Math.max(0.1, Math.min(10, rate));
   utterance.pitch = Math.max(0, Math.min(2, pitch));
 

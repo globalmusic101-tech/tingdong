@@ -4,12 +4,12 @@ import { useLang } from '../lib/i18nContext';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
-import { chapterFor, bibleBooks, meaningsFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, type Chapter, type Division, type Passage } from './model';
+import { chapterFor, bibleBooks, meaningsFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
 import { mergeLocalBibles, validateLocalBible, type LocalBible } from './localSource';
-import { BilingualMeaning, GrammarPanel, VocabularyPanel } from './LearningPanels';
+import { GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
 
@@ -17,12 +17,20 @@ function passageTitle(p: Passage, fallback: string): string {
   return p.heading?.title || fallback;
 }
 
+function speechLanguage(language: BibleLanguage): 'zh-CN' | 'ko-KR' | 'en-US' {
+  return language === 'ko' ? 'ko-KR' : language === 'en' ? 'en-US' : 'zh-CN';
+}
+
+function languageLabel(language: BibleLanguage, t: ReturnType<typeof useLang>['t']): string {
+  return language === 'ko' ? t.bibleKorean : language === 'en' ? t.bibleEnglish : t.bibleChinese;
+}
+
 function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings }: {
   passage: Passage; data: StudyData; meanings: typeof verseMeanings; activeChapter: Chapter; onCursor: (id: string) => void;
   onStopReady: (stop: (() => void) | null) => void; onSettings: (patch: Partial<StudySettings>) => void;
 }) {
   const { t } = useLang();
-  const lines = useMemo(() => sentencesFor(passage), [passage]);
+  const lines = useMemo(() => sentencesForLanguage(passage, data.settings.primaryLanguage, meanings), [passage, data.settings.primaryLanguage, meanings]);
   const initialIndex = Math.max(0, lines.findIndex(l => l.id === data.sentenceId));
   const initialIndexRef = useRef(initialIndex);
   const [playback, setPlayback] = useState<Playback>({ phase: 'idle', index: initialIndex, count: 0, mode: null });
@@ -48,13 +56,13 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       play: text => {
         const s = settingsRef.current;
         void player.play(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
-          muted: false, rate: s.rate, tone: s.tone, gender: s.gender });
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage) });
       },
       stop: () => player.stop(),
       prefetch: text => {
         const s = settingsRef.current;
         player.prefetch(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
-          muted: false, rate: s.rate, tone: s.tone, gender: s.gender });
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage) });
       },
     }, state => {
       if (!live) return;
@@ -101,10 +109,19 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       <div className="bible-primary-controls">
         <button className="bible-primary" onClick={() => controller.current?.sequence()}>{t.bibleListen}</button>
         <button onClick={() => controller.current?.stop()} disabled={!busy}>{t.bibleStop}</button>
-        <label className="bible-checkbox"><input type="checkbox" checked={data.settings.pinyin}
+        <label className="bible-checkbox"><input type="checkbox" checked={data.settings.pinyin} disabled={data.settings.primaryLanguage !== 'zh'}
           onChange={e => onSettings({ pinyin: e.target.checked })} />{t.biblePinyin}</label>
-        <label className="bible-checkbox"><input type="checkbox" checked={data.settings.meanings}
-          onChange={e => onSettings({ meanings: e.target.checked })} />{t.bibleShowMeanings}</label>
+        <span className="bible-setting-label">{t.biblePrimaryLanguage}</span>
+        <select value={data.settings.primaryLanguage} onChange={e => {
+          const next = e.target.value as BibleLanguage;
+          onSettings({ primaryLanguage: next, secondaryLanguages: [...new Set([...data.settings.secondaryLanguages.filter(item => item !== next), data.settings.primaryLanguage])] });
+        }}>
+          {(['zh', 'ko', 'en'] as BibleLanguage[]).map(language => <option key={language} value={language}>{languageLabel(language, t)}</option>)}
+        </select>
+        <span className="bible-setting-label">{t.bibleSecondaryLanguages}</span>
+        {(['zh', 'ko', 'en'] as BibleLanguage[]).filter(language => language !== data.settings.primaryLanguage).map(language =>
+          <label className="bible-checkbox" key={language}><input type="checkbox" checked={data.settings.meanings && data.settings.secondaryLanguages.includes(language)}
+          onChange={e => onSettings({ meanings: true, secondaryLanguages: e.target.checked ? [...data.settings.secondaryLanguages, language] : data.settings.secondaryLanguages.filter(item => item !== language) })} />{languageLabel(language, t)}</label>)}
       </div>
       <div className="bible-selects">
         <label>{t.bibleRate}<select value={data.settings.rate} onChange={e => onSettings({ rate: Number(e.target.value) })}>
@@ -137,22 +154,25 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       {busy && playback.mode === 'repeat' && <span className="bible-round">{t.bibleRound(playback.count)}</span>}
     </div>
     {playback.error && <div className="bible-alert" role="alert">
-      {playback.error === 'chinese-voice-unavailable' ? t.bibleNoVoice : playback.error}
+      {playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
     </div>}
     <p className="bible-click-hint">{t.bibleClickHint}</p>
-    <div className="bible-verses" lang="zh-CN">
+    <div className="bible-verses" lang={speechLanguage(data.settings.primaryLanguage)}>
       {passage.verses.map(verse => <div className="bible-verse" key={verse.number}>
         <span className="bible-verse-number" aria-hidden="true">{verse.number}</span>
         <div className="bible-sentences">{lines.map((line, i) => line.verse !== verse.number ? null :
           <button key={line.id} data-sentence={line.id} className={`bible-sentence ${i === playback.index ? 'is-selected' : ''} ${i === playback.index && busy ? 'is-active' : ''}`}
             aria-label={`${activeChapter.chapter}:${verse.number} ${line.text}`} aria-pressed={i === playback.index && busy}
             onClick={() => controller.current?.select(i)}>
-            {data.settings.pinyin ? readings[i].map(({ char, sound }, n) => sound
+            {data.settings.pinyin && data.settings.primaryLanguage === 'zh' ? readings[i].map(({ char, sound }, n) => sound
               ? <ruby key={n}>{char}<rt>{sound}</rt></ruby> : <span key={n}>{char}</span>) : line.text}
           </button>)}
-          {data.settings.meanings && (meanings[verse.number]
-            ? <BilingualMeaning meaning={meanings[verse.number]} />
-            : <p role="alert">{t.bibleMeaningMissing}</p>)}
+          {data.settings.meanings && data.settings.secondaryLanguages.filter(language => language !== data.settings.primaryLanguage).map(language => {
+            const text = textForVerse(verse, language, meanings);
+            return <div className="bible-secondary-text" lang={speechLanguage(language)} key={language}>
+              <span className="bible-language-label">{languageLabel(language, t)}</span><p>{text || t.bibleMeaningMissing}</p>
+            </div>;
+          })}
         </div>
       </div>)}
     </div>

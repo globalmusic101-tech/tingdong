@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   importLocalBible: (language) => ipcRenderer.invoke('bible:import-local-bible', language),
   loadLocalBibles: () => ipcRenderer.invoke('bible:load-local-bibles')
-  ,speakChinese: (text, rate) => ipcRenderer.invoke('device-tts:speak', { text, rate })
+  ,speakChinese: (text, rate, language) => ipcRenderer.invoke('device-tts:speak', { text, rate, language })
   ,stopChinese: () => ipcRenderer.send('device-tts:stop')
   ,onChineseEnded: (callback) => {
     const listener = () => callback();

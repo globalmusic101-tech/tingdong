@@ -320,13 +320,14 @@ function readLocalBibles(language) {
 }
 
 ipcMain.handle('bible:load-local-bibles', () => ({ ko: readLocalBibles('ko'), en: readLocalBibles('en') }));
-ipcMain.handle('device-tts:speak', async (event, { text, rate }) => {
+ipcMain.handle('device-tts:speak', async (event, { text, rate, language }) => {
   if (process.platform !== 'darwin' || typeof text !== 'string' || !text.trim()) {
     return { ok: false, error: '기기 음성을 사용할 수 없습니다' };
   }
   if (nativeSpeechProcess) nativeSpeechProcess.kill('SIGTERM');
   const wordsPerMinute = Math.max(80, Math.min(500, Math.round(200 * Number(rate || 1))));
-  const child = spawn('/usr/bin/say', ['-v', 'Tingting', '-r', String(wordsPerMinute), text], { stdio: 'ignore' });
+  const voice = language === 'ko-KR' ? 'Yuna' : language === 'en-US' ? 'Samantha' : 'Tingting';
+  const child = spawn('/usr/bin/say', ['-v', voice, '-r', String(wordsPerMinute), text], { stdio: 'ignore' });
   nativeSpeechProcess = child;
   child.once('error', (error) => {
     if (nativeSpeechProcess !== child) return;
