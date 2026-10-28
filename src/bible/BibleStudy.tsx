@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { pinyin } from 'pinyin-pro';
 import { useLang } from '../lib/i18nContext';
+import { englishBibleBookNames } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
@@ -191,12 +192,14 @@ export function BibleStudy() {
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
-  const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (bibleBooks.find(book => book.id === selectedBook)?.name ?? selectedBook));
-  const passageRange = (p: Passage) => `${activeBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
+  const activeBook = bibleBooks.find(book => book.id === selectedBook);
+  const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (activeBook?.name ?? selectedBook));
+  const primaryBookName = data.settings.primaryLanguage === 'en'
+    ? (englishBibleBookNames[selectedBook] ?? activeBookName)
+    : (activeBook?.name ?? activeBookName);
+  const passageRange = (p: Passage) => `${primaryBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
   const primaryPassageRange = (p: Passage) => {
-    const book = bibleBooks.find(item => item.id === selectedBook);
-    const name = data.settings.primaryLanguage === 'en' ? t.bibleBookName(selectedBook, book?.name ?? selectedBook) : (book?.name ?? activeBookName);
-    return `${name} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
+    return `${primaryBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
   };
   const passages = useMemo(() => partition(activeChapter, data.mode), [activeChapter, data.mode]);
   const passageIndex = Math.max(0, passages.findIndex(p => p.id === data.passageId));
