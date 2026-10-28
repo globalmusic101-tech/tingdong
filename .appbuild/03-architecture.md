@@ -481,3 +481,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F30 architecture — 저장된 단락에서 선택 복원
 
 `StudyData.passageId`의 `version:book:chapter:start-end` 구조에서 책 ID와 장 번호를 읽어 `BibleStudy`의 초기 `selectedBook`·`selectedChapter`를 정합니다. 책·장 검증에 실패하면 `MRK`·`1`로 되돌립니다. 별도 저장 키를 추가하지 않아 기존 저장 데이터와 호환합니다.
+
+## F31 architecture — 로마서 문맥 카탈로그 검증
+
+`context-headings.json`의 `ROM` 항목을 `chapterFor('ROM', chapter)`가 주입하고, 기존 `partition(..., 'story')`가 소제목 시작 절부터 다음 소제목 직전까지 단락을 만듭니다. 로마서 회귀 테스트는 16장 전체의 절 중복·누락과 대표 장의 경계를 확인합니다.

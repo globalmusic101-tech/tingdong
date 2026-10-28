@@ -303,3 +303,14 @@ F16 구현 완료로 보고하지 않습니다.
 | Y04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 143개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F30 기획·구현·독립 검증 완료.**
+
+## F31 독립 게이트 — 로마서 이야기별 단락
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| Z01 | 로마서 1–16장 문맥 소제목과 절 범위 존재 | PASS — 기존 `context-headings.json`의 ROM 16장 문맥 카탈로그 확인 |
+| Z02 | 이야기별 로마서 단락의 절 중복·누락 없음 | PASS — 16장 전체 partition 결과가 원문 절을 정확히 한 번씩 포함 |
+| Z03 | 로마서 선택 시 목록·현재 제목·본문 범위 일치 | PASS — 기존 책·장 선택과 story partition 연결 및 대표 경계 회귀 검증 |
+| Z04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 144개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F31 기획·구현·독립 검증 완료.**

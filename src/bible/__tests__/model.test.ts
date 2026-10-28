@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chapter, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, type Chapter } from '../model';
+import { chapter, chapterFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, type Chapter } from '../model';
 
 const numbered = (n: number): Chapter => ({ ...chapter, verses: Array.from({ length: n }, (_, i) => ({ number: i + 1, text: '你好。' })), headings: [] });
 describe('Bible passage boundaries and source integrity', () => {
@@ -55,5 +55,15 @@ describe('Bible passage boundaries and source integrity', () => {
     expect(selectionForPassageId('cmn-cu89s:JHN:3:1-5')).toEqual({ book: 'JHN', chapter: 3 });
     expect(selectionForPassageId('invalid')).toEqual({ book: 'MRK', chapter: 1 });
     expect(selectionForPassageId('cmn-cu89s:JHN:999:1-5')).toEqual({ book: 'MRK', chapter: 1 });
+  });
+  it('keeps all Romans chapters separated by their story headings', () => {
+    for (let number = 1; number <= 16; number++) {
+      const data = chapterFor('ROM', number);
+      const passages = partition(data, 'story');
+      expect(passages.length).toBeGreaterThan(1);
+      expect(passages.flatMap(item => item.verses)).toEqual(data.verses);
+      expect(new Set(passages.map(item => item.id)).size).toBe(passages.length);
+    }
+    expect(partition(chapterFor('ROM', 1), 'story').map(item => [item.start, item.end])).toEqual([[1, 7], [8, 15], [16, 17], [18, 32]]);
   });
 });
