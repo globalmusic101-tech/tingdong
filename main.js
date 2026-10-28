@@ -326,7 +326,8 @@ ipcMain.handle('device-tts:speak', async (event, { text, rate, language }) => {
   }
   if (nativeSpeechProcess) nativeSpeechProcess.kill('SIGTERM');
   const wordsPerMinute = Math.max(80, Math.min(500, Math.round(200 * Number(rate || 1))));
-  const voice = language === 'ko-KR' ? 'Yuna' : language === 'en-US' ? 'Samantha' : 'Tingting';
+  // Yuna는 최신 macOS 기본 음성 목록에 없는 경우가 있어, 한국어가 포함된 Eddy를 사용합니다.
+  const voice = language === 'ko-KR' ? 'Eddy' : language === 'en-US' ? 'Samantha' : 'Tingting';
   const child = spawn('/usr/bin/say', ['-v', voice, '-r', String(wordsPerMinute), text], { stdio: 'ignore' });
   nativeSpeechProcess = child;
   child.once('error', (error) => {

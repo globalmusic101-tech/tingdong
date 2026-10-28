@@ -508,7 +508,7 @@ const ko: Strings = {
   bibleRound: (n: number) => `${n}번째 읽기`,
   bibleAudioFailed: '음성이 멈췄습니다. 문장이나 단락 듣기를 눌러 다시 시도해 주세요.',
   bibleNoVoice: '선택한 언어의 설치된 음성이 없습니다. macOS 손쉬운 사용 → 콘텐츠 말하기(또는 읽기 및 말하기)에서 해당 언어 음성을 추가하거나 온라인 음성을 선택해 주세요.',
-  bibleFallbackNotice: '온라인 음성을 가져오지 못해 기기 중국어 음성으로 전환합니다.',
+  bibleFallbackNotice: '온라인 음성을 가져오지 못해 기기 음성으로 전환합니다.',
   bibleStorageFailed: '학습 기록을 읽거나 저장하지 못했습니다. 지금 공부할 수는 있지만 앱을 닫으면 변경 사항이 사라질 수 있습니다.',
   biblePrev: '이전 단락',
   bibleNext: '다음 단락',

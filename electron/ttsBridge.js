@@ -13,7 +13,7 @@ installEdgeCompatibility(MsEdgeTTS);
 
 const SYNTH_TIMEOUT_MS = 20_000;
 
-const VOICE_PATTERN = /^zh-CN-[A-Za-z]+Neural$/;
+const VOICE_PATTERN = /^(?:zh-CN|ko-KR|en-US)-[A-Za-z]+Neural$/;
 const PROSODY_PATTERN = /^[+-]\d{1,2}%$/;
 
 /** 원고 텍스트가 SSML 구조를 깨거나 태그로 해석되지 않게 한다 */
@@ -27,8 +27,9 @@ function escapeXml(text) {
 }
 
 function buildSsml({ text, voiceId, rate, pitch }) {
+  const language = voiceId.slice(0, 5);
   return (
-    '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN">' +
+    `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${language}">` +
     `<voice name="${voiceId}">` +
     `<prosody rate="${rate}" pitch="${pitch}">${escapeXml(text)}</prosody>` +
     '</voice></speak>'
