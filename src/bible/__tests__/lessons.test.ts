@@ -70,4 +70,7 @@ describe('Bilingual study material coverage and source alignment', () => {
       expect(item.quote.trim()).not.toBe('');
     }
   });
+  it('does not reuse Mark or Romans materials for other books', () => {
+    expect(lessonFor({ start: 1, end: 8 }, 'MAT')).toEqual({ words: [], grammar: [] });
+  });
 });
