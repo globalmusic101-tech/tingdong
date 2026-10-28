@@ -314,3 +314,14 @@ F16 구현 완료로 보고하지 않습니다.
 | Z04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 144개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
 
 **현재: F31 기획·구현·독립 검증 완료.**
+
+## F32 독립 게이트 — 로마서 단어·문법 학습
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AA01 | 로마서 실제 본문 기반 단어 카드와 절 범위 필터 | PASS — ROM 절에 실제 등장하는 핵심 어휘를 생성하고 현재 단락 범위로 필터 |
+| AA02 | 로마서 실제 본문 기반 문법 카드와 절 범위 필터 | PASS — ROM 절에 실제 등장하는 문법 표현과 병렬 설명·연습 예문을 연결 |
+| AA03 | 기존 마가복음 학습 자료·복습 ID·학습 음성 회귀 | PASS — 기존 마가복음 lessonFor 기본 경로와 단어 복습 ID, 학습 음성 구조 유지 |
+| AA04 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 145개 테스트, TypeScript/Vite build, check:i18n, 변경 파일 ESLint, diff 검사, macOS arm64 app:build 통과 |
+
+**현재: F32 기획·구현·독립 검증 완료.**

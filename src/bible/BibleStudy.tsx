@@ -244,7 +244,7 @@ export function BibleStudy() {
   const toggleComplete = () => setData(d => ({ ...d, completed: completed
     ? d.completed.filter(id => id !== passage.id) : [...d.completed, passage.id] }));
   const doneCount = passages.filter(p => data.completed.includes(p.id)).length;
-  const lesson = selectedBook === 'MRK' && selectedChapter === 1 ? lessonFor(passage) : { words: [], grammar: [] };
+  const lesson = lessonFor(passage, selectedBook);
   const selectChapter = (book: string, number: number) => {
     stopRef.current?.();
     setSelectedBook(book);

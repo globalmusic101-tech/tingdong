@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chapter, fivePassages, storyPassages } from '../model';
-import { grammarPoints, lessonFor, vocabulary, verseMeaningSources, verseMeanings } from '../lessons';
+import { grammarPoints, lessonFor, romansGrammarPoints, romansVocabulary, vocabulary, verseMeaningSources, verseMeanings } from '../lessons';
 
 const bilingual = (text: {ko: string; en: string}) => {
   expect(text.ko.trim().length).toBeGreaterThan(1);
@@ -58,5 +58,16 @@ describe('Bilingual study material coverage and source alignment', () => {
   });
   it('does not invent materials for a range without notes', () => {
     expect(lessonFor({start: 46,end:50})).toEqual({words:[],grammar:[]});
+  });
+  it('provides Romans vocabulary and grammar from matching source verses', () => {
+    expect(romansVocabulary.length).toBeGreaterThan(100);
+    expect(romansGrammarPoints.length).toBeGreaterThan(10);
+    const material = lessonFor({ start: 1, end: 7 }, 'ROM');
+    expect(material.words.length).toBeGreaterThan(0);
+    expect(material.grammar.length).toBeGreaterThan(0);
+    for (const item of [...romansVocabulary, ...romansGrammarPoints]) {
+      expect(item.id).toContain(':ROM:');
+      expect(item.quote.trim()).not.toBe('');
+    }
   });
 });

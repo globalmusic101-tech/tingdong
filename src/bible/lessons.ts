@@ -1,4 +1,5 @@
 import { chapter, type Passage } from './model';
+import fullRaw from './bible-full.json';
 
 /** UI 언어와 별개로 두 언어를 함께 읽는 학습 콘텐츠입니다. */
 export type Bilingual = { ko: string; en: string };
@@ -10,6 +11,45 @@ export type GrammarItem = {
   explanation: Bilingual; practice: string; practiceMeaning: Bilingual;
 };
 const both = (ko: string, en: string): Bilingual => ({ ko, en });
+type FullVerse = { number: number; zh: string };
+type FullBook = { id: string; chapters: { chapter: number; verses: FullVerse[] }[] };
+const romans = (fullRaw as { books: FullBook[] }).books.find(book => book.id === 'ROM');
+const romanVerses = romans?.chapters.flatMap(bookChapter => bookChapter.verses.map(verse => ({ ...verse, chapter: bookChapter.chapter }))) ?? [];
+
+const romanWordDefinitions = [
+  ['福音', 'fú yīn', '복음, 기쁜 소식', 'good news; the gospel'], ['义', 'yì', '의, 의로움', 'righteousness'],
+  ['信', 'xìn', '믿다, 믿음', 'to believe; faith'], ['恩典', 'ēn diǎn', '은혜', 'grace'], ['罪', 'zuì', '죄', 'sin'],
+  ['律法', 'lǜ fǎ', '율법', 'law'], ['肉体', 'ròu tǐ', '육체', 'flesh; human nature'], ['圣灵', 'shèng líng', '성령', 'Holy Spirit'],
+  ['称义', 'chēng yì', '의롭다 하심을 받다', 'to be justified'], ['救', 'jiù', '구원하다', 'to save; salvation'],
+  ['荣耀', 'róng yào', '영광', 'glory'], ['盼望', 'pàn wàng', '소망', 'hope'], ['患难', 'huàn nàn', '환난', 'trouble; suffering'],
+  ['外邦人', 'wài bāng rén', '이방인', 'Gentiles'], ['以色列', 'yǐ sè liè', '이스라엘', 'Israel'], ['顺服', 'shùn fú', '순종하다', 'to obey'],
+  ['彼此', 'bǐ cǐ', '서로', 'one another'], ['怜悯', 'lián mǐn', '긍휼히 여기다', 'mercy; compassion'], ['良善', 'liáng shàn', '선함', 'goodness'],
+  ['更新', 'gēng xīn', '새롭게 하다', 'to renew'], ['身体', 'shēn tǐ', '몸', 'body'], ['智慧', 'zhì huì', '지혜', 'wisdom'],
+] as const;
+
+export const romansVocabulary: VocabularyItem[] = romanWordDefinitions.flatMap(([term, reading, ko, en]) =>
+  romanVerses.filter(verse => verse.zh.includes(term)).map(verse => ({
+    id: `cmn-cu89s:ROM:${verse.chapter}:${verse.number}:${term}`,
+    verse: verse.number, word: term, pinyin: reading, meaning: both(ko, en), quote: verse.zh,
+  })));
+
+const romanGrammarDefinitions = [
+  ['因信', '因 + 원인 / because of + reason', '因信은 믿음을 근거로 삼는 표현입니다.', '因信 presents faith as the reason or basis.', '因信得生', '因 / 信', '因爱而服事。', '사랑으로 섬깁니다.', 'We serve because of love.'],
+  ['不但', '不但…也… / not only… but also…', '不但는 한 가지 사실에 더해 다른 사실도 함께 말할 때 씁니다.', '不但 introduces an additional point: not only one thing, but also another.', '不但如此，欢喜也是如此', '不但 / 如此', '他不但学习，也实践。', '그는 공부할 뿐 아니라 실천도 합니다.', 'He not only studies, but also practices.'],
+  ['若', '若… / if…', '若는 “만약 ~라면”이라는 조건을 나타내는 문어적 표현입니다.', '若 introduces a literary “if” condition.', '若神的灵住在你们心里', '若 / 神的灵住在…', '若你愿意，我们就开始。', '원하시면 시작하겠습니다.', 'If you are willing, we will begin.'],
+  ['凡', '凡… / whoever or all who…', '凡은 일정한 조건에 해당하는 모든 사람이나 대상을 묶습니다.', '凡 groups all people or things that meet the stated condition.', '凡求告主名的，就必得救', '凡 / 求告主名的', '凡相信的人都可以来。', '믿는 사람은 누구나 올 수 있습니다.', 'Everyone who believes may come.'],
+  ['以致', '以致… / so that…', '以致는 앞의 결과가 뒤의 상태나 결과로 이어짐을 나타냅니다.', '以致 links an earlier result to what follows, “so that.”', '以致无可推诿', '以致 / 无可推诿', '他认真学习，以致进步很快。', '그는 열심히 공부해서 빠르게 발전했습니다.', 'He studied diligently, so that he improved quickly.'],
+  ['既然', '既然…就… / since… then…', '既然은 이미 성립한 사실을 근거로 다음 판단이나 행동을 이끕니다.', '既然 uses an established fact to lead to a conclusion or action.', '既是这样，我们就当怎样行呢', '既是这样 / 就 / 怎样行', '既然来了，就一起吃饭吧。', '왔으니 함께 식사합시다.', 'Since you are here, let us eat together.'],
+  ['不要', '不要… / do not…', '不要는 하지 말아야 할 행동을 부정 명령으로 나타냅니다.', '不要 expresses a negative command, “do not.”', '不要自以为聪明', '不要 / 自以为聪明', '不要害怕。', '두려워하지 마세요.', 'Do not be afraid.'],
+  ['各人', '各人… / each person…', '各人은 사람마다의 행동이나 책임을 말할 때 씁니다.', '各人 refers to each person and their action or responsibility.', '各人必照自己的行为受审判', '各人 / 照自己的行为', '各人都要尽自己的责任。', '각 사람은 자기 책임을 다해야 합니다.', 'Each person should fulfill their responsibility.'],
+] as const;
+
+export const romansGrammarPoints: GrammarItem[] = romanGrammarDefinitions.flatMap(([term, pattern, ko, en, _quoteHint, breakdown, practice, practiceKo, practiceEn]) =>
+  romanVerses.filter(verse => verse.zh.includes(term)).map(verse => ({
+    id: `cmn-cu89s:ROM:${verse.chapter}:${verse.number}:grammar:${term}`,
+    verse: verse.number, pattern, quote: verse.zh, breakdown,
+    explanation: both(ko, en), practice, practiceMeaning: both(practiceKo, practiceEn),
+  })));
 
 export const verseMeaningSources = {
   ko: { name: '한국어 성경 1910', url: 'https://ebible.org/kor/MRK01.htm' },
@@ -198,8 +238,10 @@ export const grammarPoints: GrammarItem[] = [
     '今天下雨，我们只好在家学习。','오늘 비가 와서 집에서 공부할 수밖에 없습니다.','It is raining today, so we have to study at home.'),
 ];
 
-export function lessonFor(passage: Pick<Passage, 'start' | 'end'>) {
+export function lessonFor(passage: Pick<Passage, 'start' | 'end'>, bookId = 'MRK') {
   const inRange = (item: { verse: number }) => item.verse >= passage.start && item.verse <= passage.end;
-  return { words: vocabulary.filter(inRange), grammar: grammarPoints.filter(inRange) };
+  const words = bookId === 'ROM' ? romansVocabulary : vocabulary;
+  const grammar = bookId === 'ROM' ? romansGrammarPoints : grammarPoints;
+  return { words: words.filter(inRange), grammar: grammar.filter(inRange) };
 }
-export const validWordIds = new Set(vocabulary.map(item => item.id));
+export const validWordIds = new Set([...vocabulary, ...romansVocabulary].map(item => item.id));
