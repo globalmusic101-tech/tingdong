@@ -12,6 +12,7 @@ import type { PrompterSettings } from '../settings';
  * 배속 슬라이더가 이 값을 그대로 늘리고 줄인다.
  */
 const SILENT_BASE_CPM = 200;
+const AUDIO_PLAY_TIMEOUT_MS = 4_000;
 
 export function silentSeconds(chars: number, rate: number): number {
   const perMinute = SILENT_BASE_CPM * rate;
@@ -102,6 +103,16 @@ export class SentencePlayer {
     return synthEdge(params).then(url => this.prepareAudio(url));
   }
 
+  private playAudio(audio: HTMLAudioElement): Promise<void> {
+    let timer: number | undefined;
+    const timeout = new Promise<void>((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error('음성 재생이 시작되지 않았습니다')), AUDIO_PLAY_TIMEOUT_MS);
+    });
+    return Promise.race([audio.play(), timeout]).finally(() => {
+      if (timer !== undefined) window.clearTimeout(timer);
+    });
+  }
+
   private playLocal(text: string, settings: PrompterSettings, id: number): void {
     const preset = resolveVoice(settings.gender, settings.tone, settings.language);
     const rate = settings.rate * (1 + preset.ratePct / 100);
@@ -157,7 +168,7 @@ export class SentencePlayer {
         this.events.onEnded();
       };
       audio.onerror = () => this.fail('audio-playback-error', id);
-      await audio.play();
+      await this.playAudio(audio);
       if (id !== this.requestId) return;
       this.beginTiming(text);
       this.events.onStatus('playing');
