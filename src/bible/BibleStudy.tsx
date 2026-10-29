@@ -260,11 +260,17 @@ export function BibleStudy() {
     if (!result.ok || !result.data) { setLocalBibleMessage(result.error ?? t.bibleLocalBibleInvalid); return; }
     const checked = validateLocalBible(result.data, language);
     if (!checked.ok) { setLocalBibleMessage(t.bibleLocalBibleInvalid); return; }
-    setLocalBibles(current => ({ ...current, [language]: [...current[language], checked.data] }));
-    setSelectedVersions(current => ({ ...current, [language]: checked.data.translation }));
-    localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, [language]: checked.data.translation }));
+    setLocalBibles(current => ({
+      ...current,
+      [language]: [...current[language].filter(item => item.translation !== checked.data.translation), checked.data],
+    }));
+    setSelectedVersions(current => {
+      const next = { ...current, [language]: checked.data.translation };
+      localStorage.setItem('tingdong.bible.versions', JSON.stringify(next));
+      return next;
+    });
     setLocalBibleMessage(null);
-  }, [selectedVersions, t]);
+  }, [t]);
   const go = useCallback((p: Passage, mark = false) => {
     stopRef.current?.();
     if (p.id === passage.id) return;
@@ -405,7 +411,6 @@ export function BibleStudy() {
           </div>
           <p><a href={activeChapter.source} target="_blank" rel="noreferrer">{t.bibleContentSource}</a> · <a href="https://ebible.org/kor/MRK01.htm" target="_blank" rel="noreferrer">Korean Bible 1910</a> · <a href="https://ebible.org/eng-web/MRK01.htm" target="_blank" rel="noreferrer">World English Bible Classic</a> · <a href="https://ebible.org/cmn-cu89s/copyright.htm" target="_blank" rel="noreferrer">{t.bibleLicense}</a></p>
         </details>
-        <p className="bible-pinyin-footnote">{t.biblePinyinNotice}</p>
       </article>
     </div>
   </main>;
