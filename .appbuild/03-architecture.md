@@ -507,3 +507,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F36 architecture — 본문 표시 설정
 
 `StudySettings.fontSize`는 `small | medium | large | xlarge`를 저장하고 `StudySession`의 CSS 변수로 주 본문 문장에 적용합니다. 기존 `primaryLanguage`와 `secondaryLanguages`는 유지하며, 상단 진도 집계 UI만 제거합니다. 로컬 한국어·영어 판본 상태와 본문 선택은 기존 저장·merge 경로를 재사용합니다.
+
+## F37 architecture — 낭독 속도 범위
+
+`StudySettings.rate`는 기존 선택값을 포함해 0.5부터 3까지 검증합니다. `BibleStudy`는 선택 속도를 온라인 Edge 합성과 기기 음성에 전달하며, Edge SSML 속도 변환의 상한도 3×에 맞춰 `+200%`까지 허용합니다. 기존 저장 데이터와 지원되지 않는 값은 기존 기본값으로 복구합니다.

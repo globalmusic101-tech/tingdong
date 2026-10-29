@@ -26,6 +26,10 @@ describe('Bible progress storage', () => {
     const data = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, repeats: 1 } });
     expect(data.settings.repeats).toBe(1);
   });
+  it('accepts the high-speed reading settings through 3x', () => {
+    const data = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, rate: 3 } });
+    expect(data.settings.rate).toBe(3);
+  });
   it('preserves completion from a book outside Mark 1', () => {
     const external = passagesForAllBooks('story').find(item => item.id.includes(':JHN:'))!;
     const data = validateStudy({ ...DEFAULT_STUDY, completed: [external.id] });

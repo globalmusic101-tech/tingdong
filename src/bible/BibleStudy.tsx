@@ -138,7 +138,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       </div>
       <div className="bible-selects">
         <label>{t.bibleRate}<select value={data.settings.rate} onChange={e => onSettings({ rate: Number(e.target.value) })}>
-          {[0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5].map(rate => <option key={rate} value={rate}>{rate}×</option>)}
+          {[0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3].map(rate => <option key={rate} value={rate}>{rate}×</option>)}
         </select></label>
         <label>{t.bibleRepeats}<select value={data.settings.repeats} onChange={e => onSettings({ repeats: Number(e.target.value) })}>
           <option value={0}>{t.bibleForever}</option><option value={1}>{t.bibleTimes(1)}</option>

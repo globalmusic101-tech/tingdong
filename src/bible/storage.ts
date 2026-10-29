@@ -36,7 +36,7 @@ export function validateStudy(value: unknown): StudyData {
     settings: {
       pinyin: typeof s.pinyin === 'boolean' ? s.pinyin : true,
       meanings: typeof s.meanings === 'boolean' ? s.meanings : true,
-      rate: typeof s.rate === 'number' && [0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5].includes(s.rate) ? s.rate : 0.85,
+      rate: typeof s.rate === 'number' && [0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3].includes(s.rate) ? s.rate : 0.85,
       repeats: typeof s.repeats === 'number' && [0, 1, 3, 5].includes(s.repeats) ? s.repeats : 0,
       gapMs: typeof s.gapMs === 'number' && [0, 500, 1000, 2000, 3000].includes(s.gapMs) ? s.gapMs : 1000,
       engine: s.engine === 'edge' || s.engine === 'google' ? 'edge' : 'local',

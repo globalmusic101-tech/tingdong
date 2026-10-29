@@ -50,10 +50,10 @@ export function resolveVoice(gender: Gender, tone: Tone, language: SpeechLanguag
   return VOICE_MAP[language][gender][tone];
 }
 
-/** 사용자 배속(0.5~1.5)과 톤 보정을 합쳐 SSML rate 문자열로 만든다. */
+/** 사용자 배속(0.5~3)과 톤 보정을 합쳐 SSML rate 문자열로 만든다. */
 export function toRateString(userRate: number, tonePct: number): string {
   const pct = Math.round((userRate - 1) * 100 + tonePct);
-  const clamped = Math.max(-50, Math.min(80, pct));
+  const clamped = Math.max(-50, Math.min(200, pct));
   return `${clamped >= 0 ? '+' : ''}${clamped}%`;
 }
 

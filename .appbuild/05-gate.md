@@ -386,3 +386,13 @@ F16 구현 완료로 보고하지 않습니다.
 | AE03 | 로컬 판본·낭독·학습 기능 회귀 및 전체 검증 | PASS — 149개 테스트, build, check:i18n, eslint, diff --check 통과 |
 
 **현재: F36 기획·구현·독립 검증 완료.**
+
+## F37 독립 게이트 — 성경 낭독 고속 읽기
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AF01 | 3×까지 속도 선택·저장·복원 | PASS — 읽기 속도 목록·StudySettings validator·저장 테스트에 3×까지 반영 |
+| AF02 | 온라인·기기 음성에 고속 설정 전달 및 기존 낭독 회귀 | PASS — Edge SSML 상한을 +200%로 확장하고 기존 음성·낭독 경로 유지 |
+| AF03 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 150개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F37 기획·구현·독립 검증 완료.**
