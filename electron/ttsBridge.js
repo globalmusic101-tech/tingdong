@@ -11,7 +11,7 @@ installEdgeCompatibility(MsEdgeTTS);
  * mstts:express-as 와 <break> 는 요청 자체가 거부된다. 그래서 SSML은 prosody만 쓴다.
  */
 
-const SYNTH_TIMEOUT_MS = 8_000;
+const SYNTH_TIMEOUT_MS = 3_000;
 
 const VOICE_PATTERN = /^(?:zh-CN|ko-KR|en-US)-[A-Za-z]+Neural$/;
 const PROSODY_PATTERN = /^[+-]\d{1,2}%$/;
@@ -45,7 +45,7 @@ async function synthesize(params) {
     const chunks = [];
 
     await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('음성 합성 응답이 없습니다 (8초)')), SYNTH_TIMEOUT_MS);
+      const timer = setTimeout(() => reject(new Error('음성 합성 응답이 없습니다 (3초)')), SYNTH_TIMEOUT_MS);
       const finish = (err) => {
         clearTimeout(timer);
         err ? reject(err) : resolve();
