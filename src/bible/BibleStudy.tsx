@@ -207,7 +207,7 @@ export function BibleStudy() {
   const selectedKo = localBibles.ko.find(item => item.translation === selectedVersions.ko);
   const selectedEn = localBibles.en.find(item => item.translation === selectedVersions.en);
   const usesMarkLocalVersions = selectedBook === 'MRK' && selectedChapter === 1;
-  const baseMeanings = usesMarkLocalVersions ? verseMeanings : meaningsFor(selectedBook, selectedChapter);
+  const baseMeanings = useMemo(() => usesMarkLocalVersions ? verseMeanings : meaningsFor(selectedBook, selectedChapter), [selectedBook, selectedChapter, usesMarkLocalVersions]);
   const meanings = useMemo(() => mergeLocalBibles(
     usesMarkLocalVersions ? selectedKo : undefined,
     usesMarkLocalVersions ? selectedEn : undefined,
