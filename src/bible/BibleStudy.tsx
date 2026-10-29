@@ -323,7 +323,6 @@ export function BibleStudy() {
   return <main className="bible-study">
     <header className="bible-hero">
       <div><p className="bible-eyebrow">{t.bibleEyebrow}</p><h1>{t.bibleTitle}</h1><p>{t.bibleIntro}</p></div>
-      <span className="bible-pilot">{t.biblePilot}</span>
     </header>
     {storageFailed && <p className="bible-alert" role="alert">{t.bibleStorageFailed}</p>}
     <section className="bible-progress-overview" aria-labelledby="bible-progress-heading">
