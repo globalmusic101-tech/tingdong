@@ -7,7 +7,7 @@ describe('Bible progress storage', () => {
     const memory = new Map([['prompter.script', '保留'], ['prompter.settings', '{"muted":true}']]);
     vi.stubGlobal('localStorage', { getItem: (k: string) => memory.get(k), setItem: (k: string, v: string) => memory.set(k, v) });
     const data = { ...DEFAULT_STUDY, mode: 'five' as const, passageId: fivePassages[1].id, sentenceId: '7:0',
-      completed: [storyPassages[0].id], settings: { pinyin: false, meanings: true, rate: 0.75, repeats: 5, gapMs: 2000, engine: 'edge' as const, gender: 'female' as const, tone: 'news' as const, primaryLanguage: 'zh' as const, secondaryLanguages: ['ko', 'en'] as ('ko' | 'en')[] } };
+      completed: [storyPassages[0].id], settings: { pinyin: false, meanings: true, rate: 0.75, repeats: 5, gapMs: 2000, engine: 'edge' as const, gender: 'female' as const, tone: 'news' as const, primaryLanguage: 'zh' as const, secondaryLanguages: ['ko', 'en'] as ('ko' | 'en')[], fontSize: 'medium' as const } };
     expect(saveStudy(data)).toBe(true);
     expect(loadStudy()).toEqual({ data, failed: false });
     expect(memory.get('prompter.script')).toBe('保留');
@@ -64,7 +64,7 @@ describe('Learning material migration and review state', () => {
     const migrated = validateStudy(old);
     expect(migrated.passageId).toBe(old.passageId); expect(migrated.sentenceId).toBe('10:0');
     expect(migrated.completed).toEqual(old.completed);
-    expect(migrated.settings).toEqual({...old.settings,meanings:true,gender:'female',tone:'news',primaryLanguage:'zh',secondaryLanguages:['ko','en']});
+    expect(migrated.settings).toEqual({...old.settings,meanings:true,gender:'female',tone:'news',primaryLanguage:'zh',secondaryLanguages:['ko','en'],fontSize:'medium'});
     expect(migrated.learningView).toBe('read'); expect(migrated.wordReviews).toEqual({});
   });
   it('persists the study view, meaning visibility and self-assessed word status', () => {

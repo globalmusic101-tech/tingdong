@@ -53,6 +53,14 @@
 .bible-study button.bible-sentence { display: block; text-align: left; width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 10px 12px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 27px; line-height: 2.15; letter-spacing: .04em; overflow-wrap: anywhere; font-weight: 400; background: transparent; }
 .bible-study button.bible-sentence.is-selected { background: #f3f7f2; border-color: #e5ece2; }
 .bible-study button.bible-sentence.is-active { background: #eaf3ed; border-color: #9dbdac; box-shadow: inset 3px 0 0 #548d70; }
+.bible-verses.bible-font-small .bible-sentence { font-size: 22px; }
+.bible-verses.bible-font-medium .bible-sentence { font-size: 27px; }
+.bible-verses.bible-font-large .bible-sentence { font-size: 34px; }
+.bible-verses.bible-font-xlarge .bible-sentence { font-size: 42px; }
+.bible-verses.bible-font-small .bible-secondary-text { font-size: 12px; }
+.bible-verses.bible-font-medium .bible-secondary-text { font-size: 14px; }
+.bible-verses.bible-font-large .bible-secondary-text { font-size: 16px; }
+.bible-verses.bible-font-xlarge .bible-secondary-text { font-size: 18px; }
 .bible-sentence ruby { ruby-align: center; }
 .bible-sentence rt { font-family: system-ui, sans-serif; font-size: 11px; color: #78907f; letter-spacing: .01em; font-weight: 400; }
 .bible-footer { border-top: 1px solid #e6ebe5; padding-top: 22px; }

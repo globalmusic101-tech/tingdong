@@ -503,3 +503,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 `StudySettings.primaryLanguage`는 `zh | ko | en` 중 하나를 저장하고, `secondaryLanguages`는 같은 세 언어의 목록에서 주 본문을 제외한 선택 목록을 저장합니다. `BibleStudy`는 현재 단락의 절 번호를 기준으로 중국어 원문과 선택된 한국어·영어 판본을 같은 절에 매칭해 렌더링합니다. 기존 로컬 판본은 현재 지원 범위인 마가복음 1장에서만 해당 언어의 본문을 덮어쓰며, 파일이 없으면 기본 병렬 본문을 사용합니다.
 
 성경 낭독은 `SentencePlayer`에 언어별 음성 설정을 전달하고 Edge 음성은 중국어·한국어·영어 voice map을 사용합니다. 기기 음성도 선택 언어의 locale을 전달하며, 중국어 주 본문일 때만 병음을 계산합니다. 기존 저장 데이터에는 중국어 주 본문과 한국어·영어 표시를 기본값으로 보충해 호환합니다.
+
+## F36 architecture — 본문 표시 설정
+
+`StudySettings.fontSize`는 `small | medium | large | xlarge`를 저장하고 `StudySession`의 CSS 변수로 주 본문 문장에 적용합니다. 기존 `primaryLanguage`와 `secondaryLanguages`는 유지하며, 상단 진도 집계 UI만 제거합니다. 로컬 한국어·영어 판본 상태와 본문 선택은 기존 저장·merge 경로를 재사용합니다.

@@ -5,7 +5,7 @@ import { englishBibleBookNames } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
-import { chapterFor, bibleBooks, headingTitle, meaningsFor, partition, passagesForAllBooks, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
+import { chapterFor, bibleBooks, headingTitle, meaningsFor, partition, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
@@ -130,6 +130,11 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
         {(['zh', 'ko', 'en'] as BibleLanguage[]).filter(language => language !== data.settings.primaryLanguage).map(language =>
           <label className="bible-checkbox" key={language}><input type="checkbox" checked={data.settings.meanings && data.settings.secondaryLanguages.includes(language)}
           onChange={e => onSettings({ meanings: true, secondaryLanguages: e.target.checked ? [...data.settings.secondaryLanguages, language] : data.settings.secondaryLanguages.filter(item => item !== language) })} />{languageLabel(language, t)}</label>)}
+        <span className="bible-setting-label">{t.bibleFontSize}</span>
+        <select value={data.settings.fontSize} onChange={e => onSettings({ fontSize: e.target.value as StudySettings['fontSize'] })}>
+          <option value="small">{t.bibleFontSmall}</option><option value="medium">{t.bibleFontMedium}</option>
+          <option value="large">{t.bibleFontLarge}</option><option value="xlarge">{t.bibleFontXLarge}</option>
+        </select>
       </div>
       <div className="bible-selects">
         <label>{t.bibleRate}<select value={data.settings.rate} onChange={e => onSettings({ rate: Number(e.target.value) })}>
@@ -165,7 +170,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       {playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
     </div>}
     <p className="bible-click-hint">{t.bibleClickHint}</p>
-    <div className="bible-verses" lang={speechLanguage(data.settings.primaryLanguage)}>
+    <div className={`bible-verses bible-font-${data.settings.fontSize}`} lang={speechLanguage(data.settings.primaryLanguage)}>
       {passage.verses.map(verse => <div className="bible-verse" key={verse.number}>
         <span className="bible-verse-number" aria-hidden="true">{verse.number}</span>
         <div className="bible-sentences">{lines.map((line, i) => line.verse !== verse.number ? null :
@@ -223,15 +228,6 @@ export function BibleStudy() {
   ), [selectedKo, selectedEn, usesMarkLocalVersions, baseMeanings]);
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
-  const progressRows = useMemo(() => bibleBooks.map(book => {
-    const bookPassages = book.chapters.flatMap(item => partition(chapterFor(book.id, item.chapter), data.mode));
-    const done = bookPassages.filter(item => data.completed.includes(item.id)).length;
-    return { ...book, displayName: t.bibleBookName(book.id, book.name), done, total: bookPassages.length };
-  }), [data.completed, data.mode, t]);
-  const progressTotal = useMemo(() => {
-    const all = passagesForAllBooks(data.mode);
-    return { done: all.filter(item => data.completed.includes(item.id)).length, total: all.length };
-  }, [data.completed, data.mode]);
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
   const cursor = useCallback((id: string) => setData(d => d.sentenceId === id ? d : { ...d, sentenceId: id }), []);
   const settings = (patch: Partial<StudySettings>) => {
@@ -331,20 +327,6 @@ export function BibleStudy() {
       <div><p className="bible-eyebrow">{t.bibleEyebrow}</p><h1>{t.bibleTitle}</h1><p>{t.bibleIntro}</p></div>
     </header>
     {storageFailed && <p className="bible-alert" role="alert">{t.bibleStorageFailed}</p>}
-    <section className="bible-progress-overview" aria-labelledby="bible-progress-heading">
-      <div className="bible-progress-overview-heading"><div><h2 id="bible-progress-heading">{t.bibleProgressOverview}</h2>
-        <p>{t.bibleProgressSummary(progressTotal.done, progressTotal.total)}</p></div>
-        <span>{data.mode === 'story' ? t.bibleStory : t.bibleFive}</span></div>
-      <div className="bible-progress-table-wrap"><table><thead><tr>
-        <th scope="col">{t.bibleProgressBook}</th><th scope="col">{t.bibleProgressChapters}</th>
-        <th scope="col">{t.bibleProgressDone}</th><th scope="col">{t.bibleProgressTotal}</th><th scope="col">{t.bibleProgressPercent}</th>
-      </tr></thead><tbody>{progressRows.map(row => {
-        const percent = row.total ? Math.round(row.done / row.total * 100) : 0;
-        return <tr key={row.id} className={row.id === selectedBook ? 'is-current' : undefined}>
-          <th scope="row">{row.displayName}</th><td>{row.chapters.length}</td><td>{row.done}</td><td>{row.total}</td><td>{percent}%</td>
-        </tr>;
-      })}</tbody></table></div>
-    </section>
     <div className="bible-layout">
       <aside className="bible-sidebar">
         <h2>{t.bibleLibrary}</h2>
