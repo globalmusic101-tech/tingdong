@@ -26,9 +26,10 @@ function languageLabel(language: BibleLanguage, t: ReturnType<typeof useLang>['t
   return language === 'ko' ? t.bibleKorean : language === 'en' ? t.bibleEnglish : t.bibleChinese;
 }
 
-function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings }: {
+function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings, onPassageComplete, autoStart, onAutoStartConsumed }: {
   passage: Passage; data: StudyData; meanings: typeof verseMeanings; activeChapter: Chapter; onCursor: (id: string) => void;
   onStopReady: (stop: (() => void) | null) => void; onSettings: (patch: Partial<StudySettings>) => void;
+  onPassageComplete: () => void; autoStart: boolean; onAutoStartConsumed: () => void;
 }) {
   const { t } = useLang();
   const lines = useMemo(() => sentencesForLanguage(passage, data.settings.primaryLanguage, meanings), [passage, data.settings.primaryLanguage, meanings]);
@@ -40,6 +41,8 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
   const playerRef = useRef<SentencePlayer | null>(null);
   const settingsRef = useRef(data.settings);
   settingsRef.current = data.settings;
+  const autoStartRef = useRef(autoStart);
+  autoStartRef.current = autoStart;
   const cursorRef = useRef(onCursor);
   cursorRef.current = onCursor;
   const edge = hasEdgeBridge();
@@ -69,9 +72,13 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       if (!live) return;
       setPlayback(state);
       cursorRef.current(lines[state.index].id);
-    }, settingsRef.current.repeats, settingsRef.current.gapMs, initialIndexRef.current);
+    }, settingsRef.current.repeats, settingsRef.current.gapMs, initialIndexRef.current, onPassageComplete);
     controller.current = engine;
     onStopReady(() => engine.stop());
+    if (autoStartRef.current) {
+      onAutoStartConsumed();
+      window.setTimeout(() => { if (live) engine.sequence(); }, 0);
+    }
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') engine.stop();
     };
@@ -84,7 +91,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       onStopReady(null);
       window.removeEventListener('keydown', keydown);
     };
-  }, [lines, onStopReady]);
+  }, [lines, onStopReady, onPassageComplete, onAutoStartConsumed]);
 
   useEffect(() => {
     controller.current?.configure(data.settings.repeats, data.settings.gapMs);
@@ -191,6 +198,7 @@ export function BibleStudy() {
   const [selectedChapter, setSelectedChapter] = useState(() => selectionForPassageId(loaded.data.passageId).chapter);
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
+  const autoStartChapterRef = useRef<number | null>(null);
   const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
   const activeBook = bibleBooks.find(book => book.id === selectedBook);
   const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (activeBook?.name ?? selectedBook));
@@ -257,12 +265,12 @@ export function BibleStudy() {
     localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, [language]: checked.data.translation }));
     setLocalBibleMessage(null);
   }, [selectedVersions, t]);
-  const go = (p: Passage, mark = false) => {
+  const go = useCallback((p: Passage, mark = false) => {
     stopRef.current?.();
     if (p.id === passage.id) return;
     setData(d => ({ ...d, passageId: p.id, sentenceId: sentencesFor(p)[0].id,
       completed: mark ? [...new Set([...d.completed, passage.id])] : d.completed }));
-  };
+  }, [passage.id]);
   const divide = (mode: Division) => {
     stopRef.current?.();
     const verse = Number(data.sentenceId.split(':')[0]);
@@ -275,12 +283,30 @@ export function BibleStudy() {
   const lesson = lessonFor(passage, selectedBook);
   const selectChapter = (book: string, number: number) => {
     stopRef.current?.();
+    autoStartChapterRef.current = null;
     setSelectedBook(book);
     setSelectedChapter(number);
     const next = chapterFor(book, number);
     const first = partition(next, data.mode)[0];
     setData(d => ({ ...d, passageId: first.id, sentenceId: sentencesFor(first)[0].id }));
   };
+  const consumeAutoStart = useCallback(() => { autoStartChapterRef.current = null; }, []);
+  const continueReading = useCallback(() => {
+    if (data.settings.gapMs !== 0) return;
+    if (passageIndex < passages.length - 1) {
+      autoStartChapterRef.current = selectedChapter;
+      go(passages[passageIndex + 1], true);
+      return;
+    }
+    const nextChapter = activeBook?.chapters.find(item => item.chapter === selectedChapter + 1);
+    if (!nextChapter) return;
+    const first = partition(chapterFor(selectedBook, nextChapter.chapter), data.mode)[0];
+    stopRef.current?.();
+    autoStartChapterRef.current = nextChapter.chapter;
+    setSelectedChapter(nextChapter.chapter);
+    setData(d => ({ ...d, passageId: first.id, sentenceId: sentencesFor(first)[0].id,
+      completed: [...new Set([...d.completed, passage.id])] }));
+  }, [activeBook, data.mode, data.settings.gapMs, go, passage.id, passageIndex, passages, selectedBook, selectedChapter]);
   const switchView = (view: LearningView) => {
     stopRef.current?.();
     setData(d => ({ ...d, learningView: view }));
@@ -351,7 +377,8 @@ export function BibleStudy() {
         <p className="bible-meaning-note">{t.bibleMeaningNote}</p>
         <div hidden={data.learningView !== 'read'}>
           <StudySession key={`${data.mode}:${passage.id}`} passage={passage} data={data} meanings={meanings} activeChapter={activeChapter} onCursor={cursor}
-            onStopReady={stopReady} onSettings={settings} />
+            onStopReady={stopReady} onSettings={settings} onPassageComplete={continueReading}
+            autoStart={autoStartChapterRef.current === selectedChapter} onAutoStartConsumed={consumeAutoStart} />
         </div>
         {data.learningView === 'words' && <VocabularyPanel key={passage.id} items={lesson.words} reviews={data.wordReviews} onReview={reviewWord} />}
         {data.learningView === 'grammar' && <GrammarPanel items={lesson.grammar} />}

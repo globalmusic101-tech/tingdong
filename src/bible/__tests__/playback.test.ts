@@ -57,6 +57,15 @@ describe('Study audio scheduling', () => {
     vi.advanceTimersByTime(10000);
     expect(audio.play.mock.calls).toEqual([['你好。'],['再见。']]); expect(p.state.mode).toBeNull();
   });
+  it('notifies a completed passage only after the final sentence ends', () => {
+    const done = vi.fn();
+    const audio = { play: vi.fn(), stop: vi.fn() };
+    const p = new StudyPlayback([lines[0]], audio, vi.fn(), 0, 0, 0, done);
+    p.sequence(); p.ended();
+    expect(done).toHaveBeenCalledOnce();
+    p.select(0); p.stop();
+    expect(done).toHaveBeenCalledOnce();
+  });
   it('stops after failure and can retry without carrying old repeat counts', () => {
     const { p, audio } = setup(); p.select(0); p.fail('no voice'); p.ended(); vi.advanceTimersByTime(10000);
     expect(p.state.phase).toBe('error'); expect(audio.play).toHaveBeenCalledTimes(1);

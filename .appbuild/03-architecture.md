@@ -490,6 +490,10 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 
 `Heading`은 `title` 중국어 원문과 선택적 `titleKo`, `titleEn`을 함께 가질 수 있습니다. `headingTitle(heading, language, range)`가 주 본문 언어에 맞는 제목을 고르고, 번역 제목이 없으면 이미 UI 언어로 만들어진 책·장·절 범위를 반환합니다. 원문 `title`은 본문 제목에 직접 사용하지 않고 출처 소제목에만 표시합니다.
 
+## F35 architecture — 연속 장 전환
+
+`StudyPlayback`은 현재 단락의 마지막 문장을 성공적으로 끝냈을 때만 `onComplete`를 호출합니다. `BibleStudy`는 이 콜백을 `gapMs === 0`인 경우에만 처리해 현재 책의 다음 장 첫 단락으로 `passageId`와 책·장 선택을 바꾸고, 새 `StudySession`에 자동 시작 신호를 전달합니다. 사용자가 정지하거나 다른 문장을 선택한 경우에는 generation 검사로 장 전환을 무효화합니다.
+
 ## F32 architecture — 책별 학습 자료 필터
 
 `lessonFor(passage, bookId)`가 기존 마가복음 자료와 로마서 자료를 책 ID로 분리한 뒤 절 범위로 필터합니다. 로마서 자료는 `bible-full.json`의 ROM 절을 기준으로 핵심 어휘·문법 정의가 실제 원문에 등장하는 경우에만 카드로 생성합니다. `validWordIds`에는 두 책의 단어 복습 ID를 포함합니다.

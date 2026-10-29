@@ -8,7 +8,7 @@ export class StudyPlayback {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private generation = 0;
   constructor(private lines: StudySentence[], private audio: AudioPort, private notify: (s: Playback) => void,
-    private repeats = 0, private gapMs = 1000, index = 0) {
+    private repeats = 0, private gapMs = 1000, index = 0, private onComplete?: () => void) {
     this.state = { phase: 'idle', index, count: 0, mode: null };
   }
   private publish(patch: Partial<Playback>) { this.state = { ...this.state, ...patch }; this.notify(this.state); }
@@ -49,7 +49,7 @@ export class StudyPlayback {
     if (!this.state.mode || this.state.phase === 'waiting') return;
     const next = this.nextIndex();
     if (next >= this.lines.length) {
-      this.stop(); return;
+      this.stop(); this.onComplete?.(); return;
     }
     this.publish({ phase: 'waiting' });
     const generation = this.generation;
