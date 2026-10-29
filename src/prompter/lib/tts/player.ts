@@ -180,7 +180,10 @@ export class SentencePlayer {
     if (this.prefetched.has(key)) return;
     const pending = synthEdge(params).then(url => this.prepareAudio(url));
     this.prefetched.set(key, pending);
-    void pending.catch(() => {
+    void pending.catch(error => {
+      if (settings.engine === 'edge') {
+        this.edgeFailure = error instanceof Error ? error.message : String(error);
+      }
       if (this.prefetched.get(key) === pending) this.prefetched.delete(key);
     });
   }

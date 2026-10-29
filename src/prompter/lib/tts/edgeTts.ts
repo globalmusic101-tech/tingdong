@@ -3,12 +3,12 @@ import { cacheKey, type SynthParams } from './types';
 
 /** 같은 문장을 두 번 요청하지 않도록, 진행 중인 합성을 공유한다. */
 const inFlight = new Map<string, Promise<string>>();
-const RENDERER_TIMEOUT_MS = 25_000;
+const RENDERER_TIMEOUT_MS = 10_000;
 
 function withTimeout<T>(promise: Promise<T>): Promise<T> {
   let timer: number | undefined;
   const timeout = new Promise<T>((_, reject) => {
-    timer = window.setTimeout(() => reject(new Error('음성 합성 응답이 없습니다 (25초)')), RENDERER_TIMEOUT_MS);
+    timer = window.setTimeout(() => reject(new Error('음성 합성 응답이 없습니다 (10초)')), RENDERER_TIMEOUT_MS);
   });
   return Promise.race([promise, timeout]).finally(() => {
     if (timer !== undefined) window.clearTimeout(timer);
