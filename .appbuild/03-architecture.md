@@ -511,3 +511,15 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F37 architecture — 낭독 속도 범위
 
 `StudySettings.rate`는 기존 선택값을 포함해 0.5부터 3까지 검증합니다. `BibleStudy`는 선택 속도를 온라인 Edge 합성과 기기 음성에 전달하며, Edge SSML 속도 변환의 상한도 3×에 맞춰 `+200%`까지 허용합니다. 기존 저장 데이터와 지원되지 않는 값은 기존 기본값으로 복구합니다.
+
+## F38 architecture — RNKSV 이야기 단락 카탈로그
+
+`context-headings.json`은 RNKSV 공개 페이지의 장별 소제목 시작 절을 `titleKo`로 저장하고, 다음 시작 절 직전까지를 단락 범위로 계산합니다. 기존 중국어 `title`은 유지하며, RNKSV에 명시적 소제목이 없는 42개 장은 기존 경계를 보존해 `headingTitle`의 범위 fallback을 사용합니다.
+
+## F39 architecture — Edge 고속 음성 검증
+
+`electron/ttsBridge.js`는 rate를 `-50%`부터 `+200%`까지 허용하고 pitch는 기존 `-50%`부터 `+50%` 범위를 유지합니다. renderer의 `toRateString`이 만드는 `+100%`·`+200%` 요청도 검증을 통과하며, `SentencePlayer`의 fallback은 Edge 요청 실패 시 선택 언어 locale을 그대로 사용합니다.
+
+## F40 architecture — 읽기 연습 시작 인덱스
+
+`PrompterApp`은 시작 버튼에 전달된 caret이 없을 때 저장된 `prompter.lastIndex`를 사용하지 않고 `0`을 `usePrompter`의 `goto`에 전달합니다. caret이 있으면 기존 `indexAtSource`로 해당 문장을 계산합니다. 시작점 결정은 `startPosition.ts`의 순수 함수로 분리해 저장 위치가 마지막 문장인 경우를 회귀 테스트합니다.

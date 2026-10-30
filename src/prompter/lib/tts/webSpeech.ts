@@ -1,5 +1,5 @@
 /**
- * 오프라인·차단 시 폴백. 기기에 설치된 중국어 음성을 쓴다.
+ * 오프라인·차단 시 폴백. 기기에 설치된 선택 언어 음성을 쓴다.
  * 톤 차이는 rate/pitch로만 근사되고, 음성 종류는 기기에 있는 것에 좌우된다.
  */
 function pickVoice(language: string): SpeechSynthesisVoice | null {

@@ -14,7 +14,13 @@ installEdgeCompatibility(MsEdgeTTS);
 const SYNTH_TIMEOUT_MS = 3_000;
 
 const VOICE_PATTERN = /^(?:zh-CN|ko-KR|en-US)-[A-Za-z]+Neural$/;
-const PROSODY_PATTERN = /^[+-]\d{1,2}%$/;
+const PROSODY_PATTERN = /^[+-]\d{1,3}%$/;
+
+function validProsody(value, min, max) {
+  if (!PROSODY_PATTERN.test(value)) return false;
+  const percent = Number(value.slice(0, -1));
+  return Number.isInteger(percent) && percent >= min && percent <= max;
+}
 
 /** 원고 텍스트가 SSML 구조를 깨거나 태그로 해석되지 않게 한다 */
 function escapeXml(text) {
@@ -73,7 +79,7 @@ export function registerTtsBridge(ipcMain) {
       if (!VOICE_PATTERN.test(params.voiceId ?? '')) {
         throw new Error(`음성 이름이 올바르지 않습니다: ${params.voiceId}`);
       }
-      if (!PROSODY_PATTERN.test(params.rate ?? '') || !PROSODY_PATTERN.test(params.pitch ?? '')) {
+      if (!validProsody(params.rate ?? '', -50, 200) || !validProsody(params.pitch ?? '', -50, 50)) {
         throw new Error('속도·음높이 값이 올바르지 않습니다');
       }
 

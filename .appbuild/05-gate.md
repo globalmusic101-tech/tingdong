@@ -396,3 +396,33 @@ F16 구현 완료로 보고하지 않습니다.
 | AF03 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 150개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
 
 **현재: F37 기획·구현·독립 검증 완료.**
+
+## F38 독립 게이트 — RNKSV 한국어 이야기 단락
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AG01 | RNKSV 장별 소제목·시작 절 수집과 66권 카탈로그 반영 | PASS — RNKSV 1,189개 장을 확인하고 소제목이 있는 장의 `titleKo`·절 경계를 카탈로그에 반영 |
+| AG02 | 한국어 선택 시 목록·현재 제목·절 범위 일치 및 소제목 없는 장 fallback | PASS — 마가복음 1장 대표 경계와 한국어 제목 회귀, 42개 소제목 미제공 장의 범위 fallback 확인 |
+| AG03 | 기존 중국어·영어 제목·낭독·학습과 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 151개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F38 기획·구현·독립 검증 완료.**
+
+## F39 독립 게이트 — 언어별 낭독 음성 안정화
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AH01 | 한국어·영어 선택 시 기기 음성 라벨과 locale 전달 | PASS — 기기·온라인 음성 라벨을 선택 언어 기준으로 일반화하고 기존 locale 전달 경로를 회귀 확인 |
+| AH02 | Edge 2×·3× rate 검증과 온라인 음성 유지 | PASS — Edge prosody 검증을 +200%까지 확장하고 0.5×·2×·3× 매핑 테스트 추가 |
+| AH03 | Edge 실패 fallback·기존 낭독·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 154개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F39 기획·구현·독립 검증 완료.**
+
+## F40 독립 게이트 — 읽기 연습 시작 위치
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AI01 | caret 없는 시작은 첫 문장, caret 있는 시작은 선택 문장 | PASS — caret이 없으면 0번 문장, caret이 있으면 해당 원고 위치의 문장으로 결정하는 순수 함수와 테스트 추가 |
+| AI02 | 저장된 마지막 문장 위치와 새 원고에서 첫 문장 정책 유지 | PASS — 저장된 `prompter.lastIndex`를 일반 시작 경로에서 사용하지 않고 첫 문장으로 초기화 |
+| AI03 | 시작 위치 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 156개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F40 기획·구현·독립 검증 완료.**

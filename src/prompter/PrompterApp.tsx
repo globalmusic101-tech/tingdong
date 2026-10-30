@@ -6,6 +6,7 @@ import { splitSentences } from './lib/splitSentences';
 import { usePrompter } from './hooks/usePrompter';
 import { useHotkeys } from './hooks/useHotkeys';
 import { hasEdgeBridge } from './lib/tts/types';
+import { startIndexFor } from './lib/startPosition';
 import {
   loadScript, loadSettings, saveIndex, saveScript, saveSettings,
   type PrompterSettings,
@@ -86,8 +87,8 @@ export function PrompterApp() {
         onStart={(caret) => {
           setRunning(true);
           setFocusRange(null);
-          // 원고에서 커서를 둔 곳을 감싸는 문장부터 읽는다
-          const target = caret === null ? index : indexAtSource(caret);
+          // 커서를 고르지 않았으면 저장된 위치와 무관하게 원고 첫 문장부터 읽는다.
+          const target = startIndexFor(caret, indexAtSource);
           goto(target);
         }}
       />

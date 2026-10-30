@@ -14,7 +14,7 @@ export type Passage = { id: string; start: number; end: number; heading?: Headin
 export type StudySentence = { id: string; verse: number; text: string };
 export const chapter: Chapter = raw;
 type FullBible = { version: string; books: { id: string; name: string; chapters: { chapter: number; verses: { number: number; zh: string; ko: string; en: string }[] }[] }[] };
-type ContextCatalog = { version: number; source: string; books: Record<string, Record<string, { start: number; end: number; title: string; key: string }[]>> };
+type ContextCatalog = { version: number; source: string; books: Record<string, Record<string, { start: number; end: number; title: string; titleKo?: string; key: string }[]>> };
 export const bibleBooks = (fullRaw as FullBible).books;
 const contextHeadings = contextRaw as ContextCatalog;
 export function headingTitle(heading: Heading | undefined, language: BibleLanguage, fallback: string): string {
@@ -31,7 +31,9 @@ export function selectionForPassageId(id: string): { book: string; chapter: numb
   return { book: 'MRK', chapter: 1 };
 }
 export function chapterFor(bookId: string, number: number): Chapter {
-  if (bookId === chapter.book && number === chapter.chapter) return chapter;
+  if (bookId === chapter.book && number === chapter.chapter) {
+    return { ...chapter, headings: contextHeadings.books[bookId]?.[String(number)] ?? chapter.headings };
+  }
   const book = bibleBooks.find(item => item.id === bookId);
   const found = book?.chapters.find(item => item.chapter === number);
   if (!book || !found) return chapter;

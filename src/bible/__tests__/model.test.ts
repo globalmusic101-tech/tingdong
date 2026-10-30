@@ -73,6 +73,12 @@ describe('Bible passage boundaries and source integrity', () => {
     }
     expect(partition(chapterFor('ROM', 1), 'story').map(item => [item.start, item.end])).toEqual([[1, 7], [8, 15], [16, 17], [18, 32]]);
   });
+  it('uses RNKSV Korean story headings and boundaries for Mark 1', () => {
+    expect(partition(chapterFor('MRK', 1), 'story').map(item => [item.start, item.end])).toEqual([
+      [1, 8], [9, 11], [12, 13], [14, 15], [16, 20], [21, 28], [29, 34], [35, 39], [40, 45],
+    ]);
+    expect(partition(chapterFor('MRK', 1), 'story')[0].heading?.titleKo).toBe('세례자 요한의 선포');
+  });
   it('never reuses a Chinese heading for a non-Chinese primary language', () => {
     const heading = { start: 1, end: 2, title: '中文标题', titleKo: '한국어 제목', titleEn: 'English title', key: '' };
     expect(headingTitle(heading, 'zh', '범위')).toBe('中文标题');
