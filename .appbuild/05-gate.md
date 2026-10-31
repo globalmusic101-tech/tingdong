@@ -426,3 +426,13 @@ F16 구현 완료로 보고하지 않습니다.
 | AI03 | 시작 위치 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 156개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
 
 **현재: F40 기획·구현·독립 검증 완료.**
+
+## F41 독립 게이트 — 붙여넣기 시작 위치 안정화
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AJ01 | 붙여넣기·입력 후 caret을 직접 위치 선택으로 오인하지 않음 | PASS — `onChange`·`onPaste`에서 선택 플래그를 해제하고 자동 `select`·키보드 이벤트를 위치 선택으로 기록하지 않음 |
+| AJ02 | 실제 클릭 선택은 유지하고 붙여넣기 시작은 첫 문장 | PASS — 실제 textarea 클릭만 선택 위치로 유지하고 붙여넣기 시작은 0번 문장으로 회귀 확인 |
+| AJ03 | 시작 위치 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 156개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F41 기획·구현·독립 검증 완료.**

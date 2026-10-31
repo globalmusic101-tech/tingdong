@@ -523,3 +523,7 @@ JS 32비트 연산·곱셈 오버플로 및 FILETIME 정밀도를 검증합니�
 ## F40 architecture — 읽기 연습 시작 인덱스
 
 `PrompterApp`은 시작 버튼에 전달된 caret이 없을 때 저장된 `prompter.lastIndex`를 사용하지 않고 `0`을 `usePrompter`의 `goto`에 전달합니다. caret이 있으면 기존 `indexAtSource`로 해당 문장을 계산합니다. 시작점 결정은 `startPosition.ts`의 순수 함수로 분리해 저장 위치가 마지막 문장인 경우를 회귀 테스트합니다.
+
+## F41 architecture — 붙여넣기 caret 구분
+
+`ScriptInput`은 `onChange`와 `onPaste`에서 직접 위치 선택 플래그를 해제하고, 브라우저가 붙여넣기·입력 후 발생시키는 `select`/키보드 이벤트는 선택 위치로 기록하지 않습니다. `onClick`으로 실제 textarea 위치를 누른 경우에만 `startIndexFor`에 caret을 전달합니다.

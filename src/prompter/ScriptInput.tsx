@@ -44,7 +44,7 @@ export function ScriptInput({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  /** 사용자가 원고를 눌러 위치를 정했는가 — 아니면 읽던 자리를 유지한다 */
+  /** 사용자가 textarea를 직접 눌러 시작 위치를 정했는가 */
   const caretChosen = useRef(false);
 
   // 읽다가 돌아오면 그 문장을 골라 보여준다
@@ -109,10 +109,13 @@ export function ScriptInput({
         className={`pr-textarea pr-font-sans${dragging ? ' is-dragging' : ''}`}
         lang="zh-CN"
         value={text}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          // 입력·붙여넣기로 생긴 마지막 caret은 시작 위치 선택으로 보지 않는다.
+          caretChosen.current = false;
+          onChange(e.target.value);
+        }}
         onClick={() => { caretChosen.current = true; }}
-        onKeyUp={() => { caretChosen.current = true; }}
-        onSelect={() => { caretChosen.current = true; }}
+        onPaste={() => { caretChosen.current = false; }}
         placeholder="大家好，很高兴见到大家！&#10;今天我想和大家一起聊聊这个话题。"
         spellCheck={false}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
