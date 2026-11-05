@@ -11,7 +11,7 @@ export type StudyData = { version: 1; mode: Division; passageId: string; sentenc
   learningView: LearningView; wordReviews: Record<string, WordReview> };
 export const DEFAULT_STUDY: StudyData = {
   version: 1, mode: 'story', passageId: storyPassages[0].id, sentenceId: '1:0', completed: [],
-  settings: { pinyin: true, meanings: true, rate: 0.85, repeats: 0, gapMs: 1000, engine: 'local', gender: 'female', tone: 'news', primaryLanguage: 'zh', secondaryLanguages: ['ko', 'en'], fontSize: 'medium' },
+  settings: { pinyin: true, meanings: true, rate: 0.85, repeats: 0, gapMs: 0, engine: 'local', gender: 'female', tone: 'news', primaryLanguage: 'zh', secondaryLanguages: ['ko', 'en'], fontSize: 'medium' },
   learningView: 'read', wordReviews: {},
 };
 const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -38,7 +38,7 @@ export function validateStudy(value: unknown): StudyData {
       meanings: typeof s.meanings === 'boolean' ? s.meanings : true,
       rate: typeof s.rate === 'number' && [0.5, 0.65, 0.75, 0.85, 1, 1.15, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3].includes(s.rate) ? s.rate : 0.85,
       repeats: typeof s.repeats === 'number' && [0, 1, 3, 5].includes(s.repeats) ? s.repeats : 0,
-      gapMs: typeof s.gapMs === 'number' && [0, 500, 1000, 2000, 3000].includes(s.gapMs) ? s.gapMs : 1000,
+      gapMs: typeof s.gapMs === 'number' && [0, 500, 1000, 2000, 3000].includes(s.gapMs) ? s.gapMs : 0,
       engine: s.engine === 'edge' || s.engine === 'google' ? 'edge' : 'local',
       gender: s.gender === 'male' ? 'male' : 'female',
       tone: s.tone === 'sermon' || s.tone === 'chat' ? s.tone : 'news',
@@ -50,10 +50,18 @@ export function validateStudy(value: unknown): StudyData {
 export function loadStudy(): { data: StudyData; failed: boolean } {
   try {
     const raw = localStorage.getItem(STUDY_KEY);
-    return { data: raw ? validateStudy(JSON.parse(raw)) : structuredClone(DEFAULT_STUDY), failed: false };
+    const rawValue = raw ? record(JSON.parse(raw)) : {};
+    const data = raw ? validateStudy(rawValue) : structuredClone(DEFAULT_STUDY);
+    if (rawValue.gapDefaultMigrated !== true) {
+      if (data.settings.gapMs === 1000) data.settings.gapMs = 0;
+    }
+    return { data, failed: false };
   } catch { return { data: structuredClone(DEFAULT_STUDY), failed: true }; }
 }
 export function saveStudy(data: StudyData): boolean {
-  try { localStorage.setItem(STUDY_KEY, JSON.stringify(data)); return true; }
+  try {
+    localStorage.setItem(STUDY_KEY, JSON.stringify({ ...data, gapDefaultMigrated: true }));
+    return true;
+  }
   catch { return false; }
 }

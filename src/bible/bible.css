@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'MaruBuri';
+  src: url('https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* 짧은 단락을 중심으로, 긴 본문도 조작부와 읽기 영역이 겹치지 않게 합니다. */
 .bible-study { --study-ink: #203b41; --study-accent: #31686c; --study-wash: #edf4f1; background: #f7f8f5; color: var(--study-ink); padding: 34px clamp(18px, 4vw, 64px) 56px; min-height: calc(100vh - 55px); }
 .bible-hero { max-width: 1340px; margin: 0 auto 30px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
@@ -50,7 +57,7 @@
 .bible-verse { display: flex; gap: 8px; align-items: baseline; }
 .bible-verse-number { width: 21px; flex-shrink: 0; font-size: 11px; color: #93a095; text-align: right; }
 .bible-sentences { min-width: 0; flex: 1; }
-.bible-study button.bible-sentence { display: block; text-align: left; width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 10px 12px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 27px; line-height: 2.15; letter-spacing: .04em; overflow-wrap: anywhere; font-weight: 400; background: transparent; }
+.bible-study button.bible-sentence { display: block; text-align: left; width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 10px 12px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 27px; line-height: 1.55; letter-spacing: .04em; overflow-wrap: anywhere; font-weight: 400; background: transparent; }
 .bible-study button.bible-sentence.is-selected { background: #f3f7f2; border-color: #e5ece2; }
 .bible-study button.bible-sentence.is-active { background: #eaf3ed; border-color: #9dbdac; box-shadow: inset 3px 0 0 #548d70; }
 .bible-verses.bible-font-small .bible-sentence { font-size: 22px; }
@@ -61,8 +68,24 @@
 .bible-verses.bible-font-medium .bible-secondary-text { font-size: 14px; }
 .bible-verses.bible-font-large .bible-secondary-text { font-size: 16px; }
 .bible-verses.bible-font-xlarge .bible-secondary-text { font-size: 18px; }
+.bible-verses[lang="ko-KR"] .bible-sentence {
+  font-family: 'MaruBuri', 'Noto Serif CJK KR', 'Apple SD Gothic Neo', serif;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+.bible-verses[lang="zh-CN"] .bible-sentence:has(ruby) {
+  padding-top: 16px;
+  line-height: 1.8;
+}
+.bible-verses .bible-sentence + .bible-sentence {
+  padding-top: 0;
+}
+.bible-verses .bible-secondary-text { font-size: 18px; }
+.bible-verses.bible-font-small .bible-secondary-text { font-size: 16px; }
+.bible-verses.bible-font-large .bible-secondary-text { font-size: 21px; }
+.bible-verses.bible-font-xlarge .bible-secondary-text { font-size: 23px; }
 .bible-sentence ruby { ruby-align: center; }
-.bible-sentence rt { font-family: system-ui, sans-serif; font-size: 11px; color: #78907f; letter-spacing: .01em; font-weight: 400; }
+.bible-sentence rt { font-family: system-ui, sans-serif; font-size: 11px; color: #78907f; letter-spacing: .01em; font-weight: 400; user-select: none; -webkit-user-select: none; pointer-events: none; }
 .bible-footer { border-top: 1px solid #e6ebe5; padding-top: 22px; }
 .bible-completion { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .bible-completion p { flex: 1; font-size: 11px; color: #7a897f; min-width: 170px; }
@@ -119,8 +142,8 @@
 .bible-meanings { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; margin: 9px 12px 8px; }
 .bible-meanings > div { border-left: 2px solid #dce8df; padding-left: 12px; min-width: 0; }
 .bible-meanings > div[lang="en"] { border-left-color: #e0e5ef; }
-.bible-language-label { display: block; color: #6e8376; font-size: 10px; font-weight: 650; letter-spacing: .04em; margin-bottom: 5px; }
-.bible-secondary-text { margin: 8px 12px 8px; padding: 8px 12px; border-left: 2px solid #dce8df; color: #4f6259; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.85; }
+.bible-language-label { display: block; color: #6e8376; font-size: 10px; font-weight: 650; letter-spacing: .04em; margin-bottom: 3px; }
+.bible-secondary-text { margin: 2px 12px; padding: 4px 12px; border-left: 2px solid #dce8df; color: #4f6259; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
 .bible-secondary-text[lang="en-US"] { border-left-color: #e0e5ef; color: #536477; }
 .bible-secondary-text p { margin: 0; overflow-wrap: anywhere; }
 .bible-meanings p { color: #4f6259; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.85; letter-spacing: 0; word-break: keep-all; overflow-wrap: anywhere; }

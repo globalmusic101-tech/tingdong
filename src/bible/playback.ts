@@ -8,7 +8,7 @@ export class StudyPlayback {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private generation = 0;
   constructor(private lines: StudySentence[], private audio: AudioPort, private notify: (s: Playback) => void,
-    private repeats = 0, private gapMs = 1000, index = 0, private onComplete?: () => void) {
+    private repeats = 0, private gapMs = 0, index = 0, private onComplete?: () => void) {
     this.state = { phase: 'idle', index, count: 0, mode: null };
   }
   private publish(patch: Partial<Playback>) { this.state = { ...this.state, ...patch }; this.notify(this.state); }
