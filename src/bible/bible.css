@@ -57,7 +57,7 @@
 .bible-verse { display: flex; gap: 8px; align-items: baseline; }
 .bible-verse-number { width: 21px; flex-shrink: 0; font-size: 11px; color: #93a095; text-align: right; }
 .bible-sentences { min-width: 0; flex: 1; }
-.bible-study button.bible-sentence { display: block; text-align: left; width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 10px 12px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 27px; line-height: 1.55; letter-spacing: .04em; overflow-wrap: anywhere; font-weight: 400; background: transparent; }
+.bible-study button.bible-sentence { display: inline-block; text-align: left; width: auto; max-width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 0 2px; vertical-align: baseline; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 27px; line-height: 1.55; letter-spacing: .04em; overflow-wrap: anywhere; font-weight: 400; background: transparent; }
 .bible-study button.bible-sentence.is-selected { background: #f3f7f2; border-color: #e5ece2; }
 .bible-study button.bible-sentence.is-active { background: #eaf3ed; border-color: #9dbdac; box-shadow: inset 3px 0 0 #548d70; }
 .bible-verses.bible-font-small .bible-sentence { font-size: 22px; }
@@ -80,6 +80,8 @@
 .bible-verses .bible-sentence + .bible-sentence {
   padding-top: 0;
 }
+.bible-verses[lang="ko-KR"] .bible-sentence + .bible-sentence,
+.bible-verses[lang="en-US"] .bible-sentence + .bible-sentence { margin-left: .25em; }
 .bible-verses .bible-secondary-text { font-size: 18px; }
 .bible-verses.bible-font-small .bible-secondary-text { font-size: 16px; }
 .bible-verses.bible-font-large .bible-secondary-text { font-size: 21px; }
