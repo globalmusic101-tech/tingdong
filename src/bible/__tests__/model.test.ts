@@ -86,4 +86,7 @@ describe('Bible passage boundaries and source integrity', () => {
     expect(headingTitle(heading, 'en', 'Range')).toBe('English title');
     expect(headingTitle({ ...heading, titleKo: undefined, titleEn: undefined }, 'ko', '범위')).toBe('범위');
   });
+  it('does not expose an internal book code as a Chinese heading', () => {
+    expect(headingTitle({ start: 1, end: 4, title: 'LUK 1:1–3', key: '' }, 'zh', '누가복음 1:1–4')).toBe('누가복음 1:1–4');
+  });
 });

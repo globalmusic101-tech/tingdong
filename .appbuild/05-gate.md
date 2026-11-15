@@ -436,3 +436,33 @@ F16 구현 완료로 보고하지 않습니다.
 | AJ03 | 시작 위치 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 156개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
 
 **현재: F41 기획·구현·독립 검증 완료.**
+
+## F42 독립 게이트 — 성경 단락 제목의 내부 코드 제거
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AK01 | 내부 책 코드 소제목 감지와 범위 fallback | PASS — `BOOK 1:1` 형식의 중국어 내부 코드를 감지해 책·장·절 범위로 대체 |
+| AK02 | 누가복음 대표 사례 및 정상 제목 회귀 | PASS — `LUK 1:1–3`은 `누가복음 1:1–4`로 fallback하고 정상 한국어·영어·중국어 제목은 유지 |
+| AK03 | 전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 157개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F42 기획·구현·독립 검증 완료.**
+
+## F43 독립 게이트 — 병음 제외 중국어 선택·복사
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AL01 | 병음의 텍스트 선택·포인터 제외 | PASS — `rt`에 `user-select: none`과 `pointer-events: none`을 적용 |
+| AL02 | 중국어 본문 복사 시 원문만 클립보드 기록 | PASS — copy fragment에서 `rt`를 제거한 text/plain만 기록 |
+| AL03 | 선택·복사 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 157개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F43 기획·구현·독립 검증 완료.**
+
+## F44 독립 게이트 — 중국어 단락 제목 일관성
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AM01 | 66권 중국어 책 이름 매핑과 범위 fallback | PASS — 중국어 책 이름 66권 매핑을 범위 fallback에 연결 |
+| AM02 | 누가복음 대표 단락과 정상 소제목 언어 일치 | PASS — 첫 단락은 `路加福音 1:1–4`, 나머지 정상 소제목도 중국어로 표시 |
+| AM03 | 언어별 제목 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 157개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
+
+**현재: F44 기획·구현·독립 검증 완료.**

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { pinyin } from 'pinyin-pro';
 import { useLang } from '../lib/i18nContext';
-import { englishBibleBookNames } from '../lib/i18n';
+import { chineseBibleBookNames, englishBibleBookNames } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
@@ -24,6 +24,18 @@ function speechLanguage(language: BibleLanguage): 'zh-CN' | 'ko-KR' | 'en-US' {
 
 function languageLabel(language: BibleLanguage, t: ReturnType<typeof useLang>['t']): string {
   return language === 'ko' ? t.bibleKorean : language === 'en' ? t.bibleEnglish : t.bibleChinese;
+}
+
+function copyChineseOnly(event: React.ClipboardEvent<HTMLButtonElement>): void {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  const range = selection.getRangeAt(0);
+  if (!event.currentTarget.contains(range.commonAncestorContainer)) return;
+
+  const fragment = range.cloneContents();
+  fragment.querySelectorAll('rt').forEach(node => node.remove());
+  event.clipboardData.setData('text/plain', fragment.textContent ?? '');
+  event.preventDefault();
 }
 
 function StudySession({ passage, data, meanings, activeChapter, onCursor, onStopReady, onSettings, onPassageComplete, autoStart, onAutoStartConsumed }: {
@@ -176,9 +188,9 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
         <div className="bible-sentences">{lines.map((line, i) => line.verse !== verse.number ? null :
           <button key={line.id} data-sentence={line.id} className={`bible-sentence ${i === playback.index ? 'is-selected' : ''} ${i === playback.index && busy ? 'is-active' : ''}`}
             aria-label={`${activeChapter.chapter}:${verse.number} ${line.text}`} aria-pressed={i === playback.index && busy}
-            onClick={() => controller.current?.select(i)}>
+            onClick={() => controller.current?.select(i)} onCopy={copyChineseOnly}>
             {data.settings.pinyin && data.settings.primaryLanguage === 'zh' ? readings[i].map(({ char, sound }, n) => sound
-              ? <ruby key={n}>{char}<rt>{sound}</rt></ruby> : <span key={n}>{char}</span>) : line.text}
+              ? <ruby key={n}>{char}<rt aria-hidden="true">{sound}</rt></ruby> : <span key={n}>{char}</span>) : line.text}
           </button>)}
           {data.settings.meanings && data.settings.secondaryLanguages.filter(language => language !== data.settings.primaryLanguage).map(language => {
             const text = textForVerse(verse, language, meanings);
@@ -209,7 +221,9 @@ export function BibleStudy() {
   const activeBookName = t.bibleBookName(selectedBook, selectedBook === 'MRK' ? t.bibleBook : (activeBook?.name ?? selectedBook));
   const primaryBookName = data.settings.primaryLanguage === 'en'
     ? (englishBibleBookNames[selectedBook] ?? activeBookName)
-    : (activeBook?.name ?? activeBookName);
+    : data.settings.primaryLanguage === 'zh'
+      ? (chineseBibleBookNames[selectedBook] ?? activeBookName)
+      : (activeBook?.name ?? activeBookName);
   const passageRange = (p: Passage) => `${primaryBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;
   const primaryPassageRange = (p: Passage) => {
     return `${primaryBookName} ${activeChapter.chapter}:${p.start}${p.start === p.end ? '' : `–${p.end}`}`;

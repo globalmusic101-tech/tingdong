@@ -170,7 +170,7 @@ async function translateFreeOnce(text: string, targetLang: string): Promise<stri
         if (index !== start) rememberClient(index);
         // 번역할 것이 없으면(부호·숫자만) 원문을 그대로 돌려준다
         if (!Array.isArray(data?.[0])) return text;
-        return data[0].map((item: any) => item[0]).join('');
+        return data[0].map((item: [string]) => item[0]).join('');
       } catch (err) {
         lastErr = err;
         if ((err as { fatal?: boolean })?.fatal) throw err;

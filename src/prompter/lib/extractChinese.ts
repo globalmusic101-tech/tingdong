@@ -28,7 +28,7 @@ const HANGUL = /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+/g;
 const LATIN = /[A-Za-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüńňǹ]+/g;
 
 /** 괄호 주석 — `（주: …）` `(yīnwèi)` `[note]`. 「」『』는 인용이라 건드리지 않는다 */
-const BRACKETED = /[（(\[【][^）)\]】]*[）)\]】]/g;
+const BRACKETED = /[（([【][^）)\]】]*[）)\]】]/g;
 
 /** 마크다운 장식과 목록 기호 */
 const DECORATION = /^[#>*\-\s]+/;

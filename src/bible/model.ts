@@ -21,7 +21,10 @@ export function headingTitle(heading: Heading | undefined, language: BibleLangua
   if (!heading) return fallback;
   if (language === 'ko' && heading.titleKo?.trim()) return heading.titleKo;
   if (language === 'en' && heading.titleEn?.trim()) return heading.titleEn;
-  return language === 'zh' ? heading.title : fallback;
+  // 일부 장의 원문 소제목에 실제 중국어 제목 대신 LUK 1:1–3 같은 내부 코드가 남아 있다.
+  // 이런 값은 사용자에게 제목으로 보여주지 않고 책·장·절 범위로 대체한다.
+  if (language === 'zh' && !/^[A-Z0-9]{3,}\s+\d+:\d+/.test(heading.title.trim())) return heading.title;
+  return fallback;
 }
 export function selectionForPassageId(id: string): { book: string; chapter: number } {
   const [, bookId, chapterValue] = id.split(':');
