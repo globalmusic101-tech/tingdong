@@ -7,7 +7,7 @@ describe('Bible progress storage', () => {
     const memory = new Map([['prompter.script', '保留'], ['prompter.settings', '{"muted":true}']]);
     vi.stubGlobal('localStorage', { getItem: (k: string) => memory.get(k), setItem: (k: string, v: string) => memory.set(k, v) });
     const data = { ...DEFAULT_STUDY, mode: 'five' as const, passageId: fivePassages[1].id, sentenceId: '7:0',
-      completed: [storyPassages[0].id], settings: { pinyin: false, meanings: true, rate: 0.75, repeats: 5, gapMs: 2000, engine: 'edge' as const, gender: 'female' as const, tone: 'news' as const, primaryLanguage: 'zh' as const, secondaryLanguages: ['ko', 'en'] as ('ko' | 'en')[], fontSize: 'medium' as const } };
+      completed: [storyPassages[0].id], settings: { pinyin: false, meanings: true, rate: 0.75, repeats: 5, gapMs: 2000, engine: 'edge' as const, gender: 'female' as const, tone: 'news' as const, primaryLanguage: 'zh' as const, secondaryLanguages: ['ko', 'en'] as ('ko' | 'en')[], fontSize: 'medium' as const, deviceVoiceByLanguage: {} } };
     expect(saveStudy(data)).toBe(true);
     expect(loadStudy()).toEqual({ data, failed: false });
     expect(memory.get('prompter.script')).toBe('保留');
@@ -34,6 +34,19 @@ describe('Bible progress storage', () => {
     const external = passagesForAllBooks('story').find(item => item.id.includes(':JHN:'))!;
     const data = validateStudy({ ...DEFAULT_STUDY, completed: [external.id] });
     expect(data.completed).toEqual([external.id]);
+  });
+  it('preserves language-specific browser voice choices and discards malformed identifiers', () => {
+    const data = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings,
+      deviceVoiceByLanguage: { zh: 'voice://mandarin', ko: 'voice://korean', en: 'x'.repeat(513), xx: 'unknown' } } });
+    expect(data.settings.deviceVoiceByLanguage).toEqual({ zh: 'voice://mandarin', ko: 'voice://korean' });
+  });
+  it('round trips selected browser voices per language', () => {
+    const memory = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (key: string) => memory.get(key), setItem: (key: string, value: string) => memory.set(key, value) });
+    const data = { ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings,
+      deviceVoiceByLanguage: { zh: 'voice://mandarin', en: 'voice://english' } } };
+    expect(saveStudy(data)).toBe(true);
+    expect(loadStudy().data.settings.deviceVoiceByLanguage).toEqual(data.settings.deviceVoiceByLanguage);
   });
   it.each([null, [], 'wrong', { version: 99 }])('recovers invalid schema %j', value => {
     expect(validateStudy(value)).toEqual(DEFAULT_STUDY);
@@ -68,7 +81,7 @@ describe('Learning material migration and review state', () => {
     const migrated = validateStudy(old);
     expect(migrated.passageId).toBe(old.passageId); expect(migrated.sentenceId).toBe('10:0');
     expect(migrated.completed).toEqual(old.completed);
-    expect(migrated.settings).toEqual({...old.settings,meanings:true,gender:'female',tone:'news',primaryLanguage:'zh',secondaryLanguages:['ko','en'],fontSize:'medium'});
+    expect(migrated.settings).toEqual({...old.settings,meanings:true,gender:'female',tone:'news',primaryLanguage:'zh',secondaryLanguages:['ko','en'],fontSize:'medium',deviceVoiceByLanguage:{}});
     expect(migrated.learningView).toBe('read'); expect(migrated.wordReviews).toEqual({});
   });
   it('persists the study view, meaning visibility and self-assessed word status', () => {

@@ -128,7 +128,7 @@ export class SentencePlayer {
       if (id !== this.requestId) return;
       this.beginTiming(text);
       this.events.onStatus('playing');
-    }, settings.language);
+    }, settings.language, settings.browserVoiceURI);
   }
 
   async play(text: string, settings: PrompterSettings): Promise<void> {

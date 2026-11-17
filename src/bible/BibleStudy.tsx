@@ -5,6 +5,7 @@ import { chineseBibleBookNames, englishBibleBookNames } from '../lib/i18n';
 import { SentencePlayer } from '../prompter/lib/tts/player';
 import { DEFAULT_SETTINGS } from '../prompter/lib/settings';
 import { hasEdgeBridge } from '../prompter/lib/tts/types';
+import { isAvailable as isBrowserSpeechAvailable, voicesForLanguage } from '../prompter/lib/tts/webSpeech';
 import { chapterFor, bibleBooks, headingTitle, meaningsFor, partition, selectionForPassageId, sentencesFor, sentencesForLanguage, textForVerse, type BibleLanguage, type Chapter, type Division, type Passage } from './model';
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
@@ -59,6 +60,55 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
   cursorRef.current = onCursor;
   const edge = hasEdgeBridge();
   const effectiveEngine = edge ? data.settings.engine : 'local';
+  const [voiceRefresh, setVoiceRefresh] = useState(0);
+  const [voiceInventory, setVoiceInventory] = useState<{ state: 'loading' | 'ready' | 'empty' | 'unsupported'; voices: SpeechSynthesisVoice[] }>({ state: 'loading', voices: [] });
+
+  useEffect(() => {
+    if (edge) return;
+    if (!isBrowserSpeechAvailable()) {
+      setVoiceInventory({ state: 'unsupported', voices: [] });
+      return;
+    }
+    let live = true;
+    const synthesis = window.speechSynthesis;
+    const refresh = () => {
+      try {
+        const voices = synthesis.getVoices();
+        if (!live) return voices;
+        if (voices.length) setVoiceInventory({ state: 'ready', voices });
+        return voices;
+      } catch {
+        if (live) setVoiceInventory({ state: 'empty', voices: [] });
+        return [];
+      }
+    };
+    setVoiceInventory({ state: 'loading', voices: [] });
+    const initial = refresh();
+    const onVoicesChanged = () => { refresh(); };
+    synthesis.addEventListener('voiceschanged', onVoicesChanged);
+    const timer = initial.length ? undefined : window.setTimeout(() => {
+      const voices = refresh();
+      if (live && voices.length === 0) setVoiceInventory({ state: 'empty', voices: [] });
+    }, 3000);
+    return () => {
+      live = false;
+      synthesis.removeEventListener('voiceschanged', onVoicesChanged);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [edge, voiceRefresh]);
+
+  const deviceVoices = useMemo(() => voicesForLanguage(speechLanguage(data.settings.primaryLanguage), voiceInventory.voices), [data.settings.primaryLanguage, voiceInventory.voices]);
+  const selectedDeviceVoice = data.settings.deviceVoiceByLanguage?.[data.settings.primaryLanguage] ?? '';
+
+  useEffect(() => {
+    if (edge || voiceInventory.state !== 'ready') return;
+    const byUri = voiceInventory.voices.filter(voice => voice.voiceURI === selectedDeviceVoice);
+    if (selectedDeviceVoice && (byUri.length !== 1 || !deviceVoices.some(voice => voice.voiceURI === selectedDeviceVoice))) {
+      const next = { ...data.settings.deviceVoiceByLanguage };
+      delete next[data.settings.primaryLanguage];
+      onSettings({ deviceVoiceByLanguage: next });
+    }
+  }, [data.settings.deviceVoiceByLanguage, data.settings.primaryLanguage, deviceVoices, edge, onSettings, selectedDeviceVoice, voiceInventory]);
 
   useEffect(() => {
     let live = true;
@@ -72,13 +122,15 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       play: text => {
         const s = settingsRef.current;
         void player.play(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
-          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage) });
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage),
+          browserVoiceURI: hasEdgeBridge() ? undefined : (s.deviceVoiceByLanguage?.[s.primaryLanguage] ?? '') });
       },
       stop: () => player.stop(),
       prefetch: text => {
         const s = settingsRef.current;
         player.prefetch(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
-          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage) });
+          muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage),
+          browserVoiceURI: hasEdgeBridge() ? undefined : (s.deviceVoiceByLanguage?.[s.primaryLanguage] ?? '') });
       },
     }, state => {
       if (!live) return;
@@ -165,13 +217,30 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
         <label>{t.menuTone}<select value={data.settings.tone} onChange={e => onSettings({ tone: e.target.value as 'sermon' | 'news' | 'chat' })}>
           <option value="sermon">{t.toneSermon}</option><option value="news">{t.toneNews}</option><option value="chat">{t.toneChat}</option>
         </select></label>
-        <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
+        {edge ? <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
           onSettings({ engine: e.target.value as 'local' | 'edge' });
         }}>
-          <option value="edge" disabled={!edge}>{t.bibleEdgeLegacy}</option><option value="local">{t.bibleLocal}</option>
-        </select></label>
+          <option value="edge">{t.bibleEdgeLegacy}</option><option value="local">{t.bibleLocal}</option>
+        </select></label> : <label>{t.bibleVoice}<select value={selectedDeviceVoice} disabled={voiceInventory.state !== 'ready' || deviceVoices.length === 0}
+          onChange={e => {
+            controller.current?.stop();
+            const next = { ...data.settings.deviceVoiceByLanguage };
+            if (e.target.value) next[data.settings.primaryLanguage] = e.target.value;
+            else delete next[data.settings.primaryLanguage];
+            onSettings({ deviceVoiceByLanguage: next });
+          }}>
+          <option value="">{t.bibleDeviceVoicePrompt}</option>
+          {deviceVoices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>)}
+        </select></label>}
       </div>
-      <p className="bible-note">{effectiveEngine === 'edge' ? t.bibleEdgeLegacyNotice : t.bibleLocalNotice} {!edge && t.bibleBrowserNotice}</p>
+      <p className="bible-note">{edge ? (effectiveEngine === 'edge' ? t.bibleEdgeLegacyNotice : t.bibleLocalNotice) : t.bibleBrowserVoiceNotice}</p>
+      {!edge && <div className="bible-note" role="status" aria-live="polite">
+        {voiceInventory.state === 'loading' && t.bibleVoiceLoading}
+        {voiceInventory.state === 'unsupported' && t.bibleVoiceUnsupported}
+        {voiceInventory.state === 'empty' && <>{t.bibleVoiceListEmpty} <button type="button" onClick={() => setVoiceRefresh(value => value + 1)}>{t.bibleVoiceReload}</button></>}
+        {voiceInventory.state === 'ready' && deviceVoices.length === 0 && <>{t.bibleVoiceNoneForLanguage} <button type="button" onClick={() => setVoiceRefresh(value => value + 1)}>{t.bibleVoiceReload}</button></>}
+        {voiceInventory.state === 'ready' && deviceVoices.length > 0 && selectedDeviceVoice && !deviceVoices.some(voice => voice.voiceURI === selectedDeviceVoice) && <>{t.bibleVoiceNoneForLanguage} <button type="button" onClick={() => setVoiceRefresh(value => value + 1)}>{t.bibleVoiceReload}</button></>}
+      </div>}
     </div>
     {fallback && <div className="bible-alert" role="status">{t.bibleFallbackNotice}</div>}
     <div className={`bible-playback bible-phase-${playback.phase}`} role="status" aria-live="polite">
@@ -179,7 +248,9 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       {busy && playback.mode === 'repeat' && <span className="bible-round">{t.bibleRound(playback.count)}</span>}
     </div>
     {playback.error && <div className="bible-alert" role="alert">
-      {playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
+      {playback.error === 'device-voice-selection-required' ? t.bibleVoiceSelectionRequired
+        : playback.error === 'speech-unavailable' ? t.bibleVoiceUnsupported
+          : playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
     </div>}
     <p className="bible-click-hint">{t.bibleClickHint}</p>
     <div className={`bible-verses bible-font-${data.settings.fontSize}`} lang={speechLanguage(data.settings.primaryLanguage)}>

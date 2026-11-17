@@ -34,6 +34,8 @@ export type PrompterSettings = {
   readMode: ReadMode;
   /** 한자 서체 — 고딕(黑体) / 명조(宋体) */
   fontStyle: 'sans' | 'serif';
+  /** 웹에서 사용자가 고른 브라우저 로컬 음성. Electron native speech에서는 무시합니다. */
+  browserVoiceURI?: string;
 };
 
 export const DEFAULT_SETTINGS: PrompterSettings = {

@@ -466,3 +466,22 @@ F16 구현 완료로 보고하지 않습니다.
 | AM03 | 언어별 제목 회귀·전체 테스트/build/check:i18n/lint/diff/app:build | PASS — 157개 테스트, TypeScript/Vite build, check:i18n, ESLint, diff 검사 및 app:build 통과 |
 
 **현재: F44 기획·구현·독립 검증 완료.**
+
+## F45 독립 게이트 — 웹 성경 기기 음성 선택
+
+독립 감독관 재검토: **기획 PASS — CRITICAL 0 / HIGH 0 / MED 0.** 01~04 F45 문서는 웹의 브라우저 음성 선택, 로컬 표시값의 제한, 비동기 목록 준비, 언어별 선택 저장, Electron 회귀 및 브라우저별 검증 조건을 명시합니다. 이번 판정은 구현 승인 범위만 정하며 기능·실제 재생을 검증하지 않습니다.
+
+| ID | 필수 검증 | 결과 |
+|---|---|---|
+| AN01 | SpeechSynthesis 미지원·초기 빈 목록·3초 대기·재시도·`voiceschanged` 후 갱신 상태를 구분 | PENDING — 브라우저 UI에서 확인 필요 |
+| AN02 | 언어별 태그 필터, `localService === true`만 노출, 언어 불일치·false/미정·중복 URI 제외 | PARTIAL — Mandarin 허용·배제 태그, false/미정, 중복 URI, ko/en 태그 단위 테스트 통과. 브라우저 UI 목록은 미검증 |
+| AN03 | 언어별 URI 저장/복원, 사라진 음성 제거 및 재선택 요구, 저장 호환과 언어 전환 보존 | PARTIAL — 언어별 URI 저장/복원, 잘못된/긴 식별자 제외 및 기존 StudyData 저장 호환 테스트 통과. 브라우저 선택 복원·언어 전환 UI 미검증 |
+| AN04 | 웹에서 고른 URI가 실제 발화에 반영되고 오류·정지·반복·연속에서 겹침이 없음 | PARTIAL — 선택 URI가 utterance에 지정되는 단위 테스트와 전체 player 회귀 통과. 실제 브라우저 청음은 미검증 |
+| AN05 | Electron Edge 선택·실패 기기 음성 경로와 StudyData 설정 회귀 | PARTIAL — 전체 기존 player/TTS/storage 회귀 통과. F45 변경 후 Electron 패키지 UI·실합성은 미검증 |
+| AN06 | 키보드 접근성 및 대기·미지원·음성 없음·재생 오류 상태 안내 | PENDING |
+| AN07 | 전체 기존 테스트/build/check:i18n/변경 파일 lint/diff 결과 기록 | PASS — `npm test` 17개 파일/162개 테스트, `npm run build`, `npm run check:i18n`, `npm run lint`, `git diff --check` 통과. ESLint는 기존 두 경고(App.tsx, i18nContext.tsx), Vite는 큰 번들 경고를 보고 |
+| AN08 | 데스크톱 Chrome/Edge/Safari, Android Chrome, iOS Safari의 실제 목록·재생·언어 전환·네트워크 관찰. 미확인 환경은 미검증 유지 | PENDING |
+
+정적 웹 서버를 띄워 화면을 확인하려 했으나 실행 환경이 `127.0.0.1:5173` 수신을 `EPERM`으로 거부했습니다. 따라서 선택 UI의 실제 표시·재생과 브라우저별 네트워크는 아직 확인하지 않았습니다.
+
+**현재: F45 기획 PASS / 구현 일부 완료 / 회귀·실제 브라우저 검증 PENDING.** `localService`는 브라우저 분류값일 뿐이며, 이것만으로 네트워크 전송이 없다고 판정하지 않습니다.

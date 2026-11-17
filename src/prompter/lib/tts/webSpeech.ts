@@ -10,6 +10,23 @@ function pickVoice(language: string): SpeechSynthesisVoice | null {
     ?? null;
 }
 
+export function voicesForLanguage(language: string, voices: readonly SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
+  const normalized = language.toLowerCase().replace(/_/g, '-');
+  const matches = (voice: SpeechSynthesisVoice) => {
+    if (voice.localService !== true) return false;
+    const tag = voice.lang.toLowerCase().replace(/_/g, '-');
+    if (normalized === 'zh-cn') {
+      if (/^(yue|zh-hk)(-|$)/.test(tag)) return false;
+      return /^(cmn(-|$)|zh$|zh-(cn|sg|tw)(-|$)|zh-(hans|hant)(-|$))/.test(tag);
+    }
+    return tag.startsWith(`${normalized.split('-')[0]}-`);
+  };
+  const matched = voices.filter(matches);
+  const counts = new Map<string, number>();
+  matched.forEach(voice => counts.set(voice.voiceURI, (counts.get(voice.voiceURI) ?? 0) + 1));
+  return matched.filter(voice => voice.voiceURI && counts.get(voice.voiceURI) === 1);
+}
+
 export function isAvailable(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
@@ -25,6 +42,7 @@ export function speakLocal(
   onError: (reason: string) => void,
   onStart: () => void = () => {},
   language = 'zh-CN',
+  voiceURI?: string,
 ): void {
   if (!isAvailable()) { onError('speech-unavailable'); return; }
   const api = window.electronAPI;
@@ -42,7 +60,11 @@ export function speakLocal(
   }
   window.speechSynthesis.cancel();
 
-  const voice = pickVoice(language);
+  if (voiceURI === '') { onError('device-voice-selection-required'); return; }
+  const voice = voiceURI === undefined
+    ? pickVoice(language)
+    : (window.speechSynthesis.getVoices().find(item => item.voiceURI === voiceURI && item.localService === true
+      && voicesForLanguage(language, [item]).length === 1) ?? null);
   if (!voice) { onError(language === 'zh-CN' ? 'chinese-voice-unavailable' : `${language}-voice-unavailable`); return; }
 
   const utterance = new SpeechSynthesisUtterance(text);
