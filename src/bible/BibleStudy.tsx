@@ -128,7 +128,6 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       stop: () => player.stop(),
       prefetch: text => {
         const s = settingsRef.current;
-        if (!hasEdgeBridge()) return;
         player.prefetch(text, { ...DEFAULT_SETTINGS, engine: s.engine,
           muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage),
           browserVoiceURI: hasEdgeBridge() ? undefined : (s.deviceVoiceByLanguage?.[s.primaryLanguage] ?? '') });

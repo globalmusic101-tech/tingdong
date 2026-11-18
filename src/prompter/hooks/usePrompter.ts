@@ -74,11 +74,8 @@ export function usePrompter(sentences: Sentence[], settings: PrompterSettings, s
       setPlaybackError(null);
       void player.play(list[i].text, settingsRef.current);
 
-      // 다음 두 문장을 미리 받아둔다 — 문장 전환 지연을 여기서 없앤다
-      if (window.tts) {
-        player.prefetch(list[i + 1]?.text ?? '', settingsRef.current);
-        player.prefetch(list[i + 2]?.text ?? '', settingsRef.current);
-      }
+      // 다음 문장 하나를 미리 받아 절 사이의 대기 시간을 줄인다.
+      player.prefetch(list[i + 1]?.text ?? '', settingsRef.current);
     },
     [player],
   );
