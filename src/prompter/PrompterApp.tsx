@@ -5,7 +5,6 @@ import { MenuBar } from './MenuBar';
 import { splitSentences } from './lib/splitSentences';
 import { usePrompter } from './hooks/usePrompter';
 import { useHotkeys } from './hooks/useHotkeys';
-import { hasEdgeBridge } from './lib/tts/types';
 import { startIndexFor } from './lib/startPosition';
 import {
   loadScript, loadSettings, saveIndex, saveScript, saveSettings,
@@ -25,7 +24,7 @@ export function PrompterApp() {
   /** 원고로 돌아갈 때, 읽고 있던 문장이 원고의 어디였는지 */
   const [focusRange, setFocusRange] = useState<{ start: number; end: number } | null>(null);
 
-  const edgeAvailable = useMemo(() => hasEdgeBridge(), []);
+  const edgeAvailable = true;
 
   const { sentences, skippedLines } = useMemo(
     () => splitSentences(text, {
@@ -146,6 +145,7 @@ export function PrompterApp() {
           {t.bannerNoBridge} (<code>npm run app:dev</code>).
         </div>
       )}
+      {settings.engine === 'edge' && <p className="pr-banner">{t.onlineVoiceNotice}</p>}
       {fallbackReason && !playbackError && (
         <div className="pr-banner pr-banner-warn">
           {t.bannerFallback(fallbackReason)}
@@ -153,7 +153,7 @@ export function PrompterApp() {
       )}
       {playbackError && (
         <div className="pr-banner pr-banner-warn" role="alert">
-          {playbackError === 'chinese-voice-unavailable' ? t.bibleNoVoice : t.audioFailed(playbackError)}
+          {playbackError === 'text-too-long' ? t.voiceTextTooLong : playbackError === 'chinese-voice-unavailable' ? t.bibleNoVoice : t.audioFailed(playbackError)}
         </div>
       )}
 

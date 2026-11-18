@@ -25,12 +25,27 @@ export async function synthEdge(params: SynthParams): Promise<string> {
   if (pending) return pending;
 
   const task = (async () => {
-    if (!window.tts) throw new Error('Edge TTS 브리지를 쓸 수 없습니다 (Electron 밖).');
-
-    const result = await withTimeout(window.tts.synth(params));
-    if (!result.ok) throw new Error(result.error);
-
-    const url = URL.createObjectURL(new Blob([result.data], { type: 'audio/mpeg' }));
+    let audio: Blob;
+    if (window.tts) {
+      const result = await withTimeout(window.tts.synth(params));
+      if (!result.ok) throw new Error(result.error);
+      audio = new Blob([result.data], { type: 'audio/mpeg' });
+    } else {
+      if (params.text.length > 2000) throw new Error('text-too-long');
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 12000);
+      let response: Response;
+      try {
+        response = await fetch('/api/tts', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params), signal: controller.signal,
+        });
+      } finally { window.clearTimeout(timer); }
+      if (!response.ok || !response.headers.get('content-type')?.includes('audio/mpeg')) throw new Error('speech-unavailable');
+      audio = await response.blob();
+      if (!audio.size) throw new Error('speech-unavailable');
+    }
+    const url = URL.createObjectURL(audio);
     cache.put(key, url);
     return url;
   })();

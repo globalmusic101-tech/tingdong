@@ -82,7 +82,7 @@ export class SentencePlayer {
   }
 
   private useLocal(settings: PrompterSettings): boolean {
-    return settings.engine === 'local' || (settings.engine === 'edge' && (!hasEdgeBridge() || this.edgeFailure !== null));
+    return settings.engine === 'local' || (settings.engine === 'edge' && hasEdgeBridge() && this.edgeFailure !== null);
   }
 
   private prepareAudio(url: string): HTMLAudioElement {
@@ -176,6 +176,7 @@ export class SentencePlayer {
       if (id !== this.requestId) return;
 
       const reason = error instanceof Error ? error.message : String(error);
+      if (!hasEdgeBridge()) { this.fail(reason, id); return; }
       this.edgeFailure = reason;
       this.events.onFallback(reason);
       try { this.playLocal(text, settings, id); }
@@ -192,7 +193,7 @@ export class SentencePlayer {
     const pending = synthEdge(params).then(url => this.prepareAudio(url));
     this.prefetched.set(key, pending);
     void pending.catch(error => {
-      if (settings.engine === 'edge') {
+      if (settings.engine === 'edge' && hasEdgeBridge()) {
         this.edgeFailure = error instanceof Error ? error.message : String(error);
       }
       if (this.prefetched.get(key) === pending) this.prefetched.delete(key);

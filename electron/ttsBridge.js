@@ -42,10 +42,17 @@ function buildSsml({ text, voiceId, rate, pitch }) {
   );
 }
 
-async function synthesize(params) {
+export async function synthesize(params, connectionTimeoutMs = 0) {
   const tts = new MsEdgeTTS();
   try {
-    await tts.setMetadata(params.voiceId, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    let connectionTimer;
+    try {
+      const connection = tts.setMetadata(params.voiceId, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+      await (connectionTimeoutMs ? Promise.race([
+        connection,
+        new Promise((_, reject) => { connectionTimer = setTimeout(() => reject(new Error('speech-timeout')), connectionTimeoutMs); }),
+      ]) : connection);
+    } finally { clearTimeout(connectionTimer); }
 
     const { audioStream } = tts.rawToStream(buildSsml(params));
     const chunks = [];
@@ -57,7 +64,12 @@ async function synthesize(params) {
         err ? reject(err) : resolve();
       };
 
-      audioStream.on('data', (chunk) => chunks.push(chunk));
+      let size = 0;
+      audioStream.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > 2_000_000) { audioStream.destroy(new Error('audio-too-large')); return; }
+        chunks.push(chunk);
+      });
       audioStream.on('end', () => finish());
       audioStream.on('error', finish);
     });

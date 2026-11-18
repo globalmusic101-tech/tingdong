@@ -59,7 +59,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
   const cursorRef = useRef(onCursor);
   cursorRef.current = onCursor;
   const edge = hasEdgeBridge();
-  const effectiveEngine = edge ? data.settings.engine : 'local';
+  const effectiveEngine = data.settings.engine;
   const [voiceRefresh, setVoiceRefresh] = useState(0);
   const [voiceInventory, setVoiceInventory] = useState<{ state: 'loading' | 'ready' | 'empty' | 'unsupported'; voices: SpeechSynthesisVoice[] }>({ state: 'loading', voices: [] });
 
@@ -121,14 +121,15 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
     const engine = new StudyPlayback(lines, {
       play: text => {
         const s = settingsRef.current;
-        void player.play(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
+        void player.play(text, { ...DEFAULT_SETTINGS, engine: s.engine,
           muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage),
           browserVoiceURI: hasEdgeBridge() ? undefined : (s.deviceVoiceByLanguage?.[s.primaryLanguage] ?? '') });
       },
       stop: () => player.stop(),
       prefetch: text => {
         const s = settingsRef.current;
-        player.prefetch(text, { ...DEFAULT_SETTINGS, engine: hasEdgeBridge() ? s.engine : 'local',
+        if (!hasEdgeBridge()) return;
+        player.prefetch(text, { ...DEFAULT_SETTINGS, engine: s.engine,
           muted: false, rate: s.rate, tone: s.tone, gender: s.gender, language: speechLanguage(s.primaryLanguage),
           browserVoiceURI: hasEdgeBridge() ? undefined : (s.deviceVoiceByLanguage?.[s.primaryLanguage] ?? '') });
       },
@@ -217,11 +218,12 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
         <label>{t.menuTone}<select value={data.settings.tone} onChange={e => onSettings({ tone: e.target.value as 'sermon' | 'news' | 'chat' })}>
           <option value="sermon">{t.toneSermon}</option><option value="news">{t.toneNews}</option><option value="chat">{t.toneChat}</option>
         </select></label>
-        {edge ? <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
+        <label>{t.bibleVoice}<select value={effectiveEngine} onChange={e => {
           onSettings({ engine: e.target.value as 'local' | 'edge' });
         }}>
           <option value="edge">{t.bibleEdgeLegacy}</option><option value="local">{t.bibleLocal}</option>
-        </select></label> : <label>{t.bibleVoice}<select value={selectedDeviceVoice} disabled={voiceInventory.state !== 'ready' || deviceVoices.length === 0}
+        </select></label>
+        {!edge && effectiveEngine === 'local' && <label>{t.bibleVoice}<select value={selectedDeviceVoice} disabled={voiceInventory.state !== 'ready' || deviceVoices.length === 0}
           onChange={e => {
             controller.current?.stop();
             const next = { ...data.settings.deviceVoiceByLanguage };
@@ -233,8 +235,8 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
           {deviceVoices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>)}
         </select></label>}
       </div>
-      <p className="bible-note">{edge ? (effectiveEngine === 'edge' ? t.bibleEdgeLegacyNotice : t.bibleLocalNotice) : t.bibleBrowserVoiceNotice}</p>
-      {!edge && <div className="bible-note" role="status" aria-live="polite">
+      <p className="bible-note">{effectiveEngine === 'edge' ? t.bibleEdgeLegacyNotice : edge ? t.bibleLocalNotice : t.bibleBrowserVoiceNotice}</p>
+      {!edge && effectiveEngine === 'local' && <div className="bible-note" role="status" aria-live="polite">
         {voiceInventory.state === 'loading' && t.bibleVoiceLoading}
         {voiceInventory.state === 'unsupported' && t.bibleVoiceUnsupported}
         {voiceInventory.state === 'empty' && <>{t.bibleVoiceListEmpty} <button type="button" onClick={() => setVoiceRefresh(value => value + 1)}>{t.bibleVoiceReload}</button></>}
@@ -248,7 +250,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
       {busy && playback.mode === 'repeat' && <span className="bible-round">{t.bibleRound(playback.count)}</span>}
     </div>
     {playback.error && <div className="bible-alert" role="alert">
-      {playback.error === 'device-voice-selection-required' ? t.bibleVoiceSelectionRequired
+      {playback.error === 'text-too-long' ? t.voiceTextTooLong : playback.error === 'device-voice-selection-required' ? t.bibleVoiceSelectionRequired
         : playback.error === 'speech-unavailable' ? t.bibleVoiceUnsupported
           : playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
     </div>}
