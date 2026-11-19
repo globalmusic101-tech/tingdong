@@ -1,5 +1,8 @@
 # F14 GATE — 공식 Google Cloud 중국어 음성
 
+## F47 웹 방문 분석 게이트
+독립 감독관이 01~04의 F47을 검토하고 URL query/hash 제거, Electron과 개발 환경 제외, 단일 페이지 집계의 한계 및 분석 실패 격리를 보완하도록 요청했다. 보완과 기존 F46 문단 복구 후 기획 PASS. 구현 및 실제 배포와 집계 검증은 PENDING.
+
 > 2026-10-22 · 독립 감독관 `/root/planning_supervisor`가 개정된 01~04 F14 증분을 재검토해 파생했습니다.
 > F13 기획·실행 증거와 loop-state는 `history/f13/`에 보존했습니다. 과거 PASS를 이번 실행 결과로 재사용하지 않습니다.
 

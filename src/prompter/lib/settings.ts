@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   rate: 1,
   pitchPct: 0,
   pinyinMode: 'above',
-  autoAdvance: false,
+  autoAdvance: true,
   gapMs: 0,
   contextBefore: 2,
   contextAfter: 3,

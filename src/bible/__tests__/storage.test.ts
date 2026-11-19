@@ -3,6 +3,10 @@ import { DEFAULT_STUDY, loadStudy, saveStudy, validateStudy, STUDY_KEY } from '.
 import { storyPassages, fivePassages, passagesForAllBooks } from '../model';
 afterEach(() => vi.unstubAllGlobals());
 describe('Bible progress storage', () => {
+  it('uses the requested playback defaults on first entry', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null });
+    expect(loadStudy().data.settings).toMatchObject({ engine: 'edge', rate: 1, repeats: 1, gapMs: 0 });
+  });
   it('round trips settings, position, mode and completion without touching legacy keys', () => {
     const memory = new Map([['prompter.script', '保留'], ['prompter.settings', '{"muted":true}']]);
     vi.stubGlobal('localStorage', { getItem: (k: string) => memory.get(k), setItem: (k: string, v: string) => memory.set(k, v) });

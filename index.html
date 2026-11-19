@@ -5,6 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tingdong (听懂)</title>
+    <script>
+      if (location.protocol === 'https:' && location.hostname === 'tingdong-liart.vercel.app') {
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+        window.va('beforeSend', function (event) {
+          try {
+            const url = new URL(event.url);
+            url.search = '';
+            url.hash = '';
+            return { ...event, url: url.toString() };
+          } catch { return null; }
+        });
+        const script = document.createElement('script');
+        script.defer = true;
+        script.src = '/_vercel/insights/script.js';
+        document.head.appendChild(script);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
