@@ -582,3 +582,6 @@ StudySettings에 선택적 secondaryFontSize를 저장하고 유효하지 않거
 
 ## F51 웹 번역 글자 크기
 기존 StudySettings.secondaryFontSize 검증과 저장을 재사용하고 Electron 조건을 제거해 웹과 로컬에 같은 선택과 스타일을 적용한다. 선택하지 않은 기존 설정과 다른 학습 데이터는 유지한다.
+
+## F52 웹 팬더 아이콘
+선택된 원본에서 웹용 PNG를 생성하여 public에 보관한다. HTML의 favicon과 apple-touch-icon에 상대 경로를 사용해 Vite 웹 및 Electron 빌드 경로를 유지한다.
