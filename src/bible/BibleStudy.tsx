@@ -200,12 +200,12 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
           <option value="small">{t.bibleFontSmall}</option><option value="medium">{t.bibleFontMedium}</option>
           <option value="large">{t.bibleFontLarge}</option><option value="xlarge">{t.bibleFontXLarge}</option>
         </select>
-        {window.electronAPI && <label className="bible-setting-label">{t.bibleSecondaryFontSize}{' '}
+        <label className="bible-setting-label">{t.bibleSecondaryFontSize}{' '}
           <select aria-label={t.bibleSecondaryFontSize} value={data.settings.secondaryFontSize ?? ''} onChange={e => onSettings({ secondaryFontSize: (e.target.value || undefined) as StudySettings['secondaryFontSize'] })}>
             <option value="">{t.bibleFontFollowPrimary}</option><option value="small">{t.bibleFontSmall}</option>
             <option value="medium">{t.bibleFontMedium}</option><option value="large">{t.bibleFontLarge}</option><option value="xlarge">{t.bibleFontXLarge}</option>
           </select>
-        </label>}
+        </label>
       </div>
       <div className="bible-selects">
         <label>{t.bibleRate}<select value={data.settings.rate} onChange={e => onSettings({ rate: Number(e.target.value) })}>
@@ -261,7 +261,7 @@ function StudySession({ passage, data, meanings, activeChapter, onCursor, onStop
           : playback.error === 'chinese-voice-unavailable' || playback.error.endsWith('-voice-unavailable') ? t.bibleNoVoice : playback.error}
     </div>}
     <p className="bible-click-hint">{t.bibleClickHint}</p>
-    <div className={`bible-verses bible-font-${data.settings.fontSize}${window.electronAPI && data.settings.secondaryFontSize ? ` bible-secondary-font-${data.settings.secondaryFontSize}` : ''}`} lang={speechLanguage(data.settings.primaryLanguage)}>
+    <div className={`bible-verses bible-font-${data.settings.fontSize}${data.settings.secondaryFontSize ? ` bible-secondary-font-${data.settings.secondaryFontSize}` : ''}`} lang={speechLanguage(data.settings.primaryLanguage)}>
       {passage.verses.map(verse => <div className="bible-verse" key={verse.number}>
         <span className="bible-verse-number" aria-hidden="true">{verse.number}</span>
         <div className="bible-sentences">{lines.map((line, i) => line.verse !== verse.number ? null :

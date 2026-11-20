@@ -579,3 +579,6 @@ SQLite WASM은 앱과 같은 출처에 고정 버전으로 제공한다. 원본 
 
 ## F50 보조 번역 글자 크기
 StudySettings에 선택적 secondaryFontSize를 저장하고 유효하지 않거나 없는 값은 기존 본문 연동으로 처리한다. Electron에만 선택 UI와 별도 CSS 클래스를 적용한다. 주 본문 및 기존 설정을 보존한다.
+
+## F51 웹 번역 글자 크기
+기존 StudySettings.secondaryFontSize 검증과 저장을 재사용하고 Electron 조건을 제거해 웹과 로컬에 같은 선택과 스타일을 적용한다. 선택하지 않은 기존 설정과 다른 학습 데이터는 유지한다.
