@@ -303,7 +303,7 @@ function localBibleDir(language) { return path.join(app.getPath('userData'), 'pr
 function readLocalBibles(language) {
   try {
     const dir = localBibleDir(language);
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(file => file.endsWith('.json')).map(file => path.join(dir, file)) : [];
+    const files = fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).filter(file => file.isFile() && file.name.endsWith('.json')).map(file => path.join(dir, file.name)) : [];
     // 이전 버전의 새한글성경 저장 위치도 한 번 읽어 새 구조로 이어갑니다.
     const legacy = language === 'ko' ? path.join(app.getPath('userData'), 'private-bible', 'saehangul-mark1.json') : null;
     if (legacy && fs.existsSync(legacy)) files.push(legacy);
@@ -360,12 +360,13 @@ ipcMain.handle('bible:import-local-bible', async (_event, language) => {
     if (!result.ok) return { ok: false, code: 'invalid', error: result.error };
     const dir = localBibleDir(language);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    if (fs.lstatSync(dir).isSymbolicLink()) throw new Error('Invalid storage directory');
     const file = path.join(dir, `${result.data.translation}.json`);
     const temporary = `${file}.tmp`;
-    fs.writeFileSync(temporary, JSON.stringify(result.data), { encoding: 'utf8', mode: 0o600 });
+    fs.writeFileSync(temporary, JSON.stringify(result.data), { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     fs.renameSync(temporary, file);
     return result;
-  } catch { return { ok: false, code: 'invalid', error: 'The selected file is not valid JSON' }; }
+  } catch { return { ok: false, code: 'invalid', error: 'Unable to read or save the selected Bible file' }; }
 });
 
 // ── 앱 초기화 ───────────────────────────────────────────────────

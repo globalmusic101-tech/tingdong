@@ -10,7 +10,7 @@ import { chapterFor, bibleBooks, headingTitle, meaningsFor, partition, selection
 import { loadStudy, saveStudy, type StudyData, type StudySettings } from './storage';
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
-import { mergeLocalBibles, validateLocalBible, type LocalBible } from './localSource';
+import { localVerse, mergeLocalBibles, validateLocalBible, type LocalBible } from './localSource';
 import { GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
@@ -308,10 +308,10 @@ export function BibleStudy() {
   const usesMarkLocalVersions = selectedBook === 'MRK' && selectedChapter === 1;
   const baseMeanings = useMemo(() => usesMarkLocalVersions ? verseMeanings : meaningsFor(selectedBook, selectedChapter), [selectedBook, selectedChapter, usesMarkLocalVersions]);
   const meanings = useMemo(() => mergeLocalBibles(
-    usesMarkLocalVersions ? selectedKo : undefined,
-    usesMarkLocalVersions ? selectedEn : undefined,
-    baseMeanings,
-  ), [selectedKo, selectedEn, usesMarkLocalVersions, baseMeanings]);
+    selectedKo, selectedEn, baseMeanings, selectedBook, selectedChapter,
+  ), [selectedKo, selectedEn, baseMeanings, selectedBook, selectedChapter]);
+  const missingKo = selectedKo ? activeChapter.verses.filter(v => !localVerse(selectedKo, selectedBook, selectedChapter, v.number)).map(v => v.number) : [];
+  const missingEn = selectedEn ? activeChapter.verses.filter(v => !localVerse(selectedEn, selectedBook, selectedChapter, v.number)).map(v => v.number) : [];
   const completed = data.completed.includes(passage.id);
   const last = passageIndex === passages.length - 1;
   const stopReady = useCallback((stop: (() => void) | null) => { stopRef.current = stop; }, []);
@@ -468,6 +468,8 @@ export function BibleStudy() {
         </footer>
         <details className="bible-about"><summary>{t.bibleAbout}</summary><p>{t.bibleAboutText}</p><p>{t.biblePinyinNotice}</p>
           <div className="bible-local-source"><strong>{t.bibleLocalBibleTitle}</strong><p>{t.bibleLocalBibleDescription}</p>
+            {missingKo.length > 0 && <p className="bible-alert">{t.bibleLocalBibleMissingVerses(t.bibleKorean, missingKo.join(', '))}</p>}
+            {missingEn.length > 0 && <p className="bible-alert">{t.bibleLocalBibleMissingVerses(t.bibleEnglish, missingEn.join(', '))}</p>}
             <div className="bible-version-row"><label>{t.bibleKorean}<select value={selectedVersions.ko} onChange={e => { const value = e.target.value; setSelectedVersions(v => ({ ...v, ko: value })); localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, ko: value })); }}>
               <option value="default">{t.bibleDefaultVersion1910}</option>{localBibles.ko.map(item => <option key={item.translation} value={item.translation}>{item.name}</option>)}
             </select></label><button onClick={() => void importLocalBible('ko')} disabled={!window.electronAPI?.importLocalBible}>{t.bibleLocalBibleImportKo}</button></div>
