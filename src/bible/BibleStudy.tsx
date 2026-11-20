@@ -11,6 +11,7 @@ import { loadStudy, saveStudy, type StudyData, type StudySettings } from './stor
 import { StudyPlayback, type Playback } from './playback';
 import { lessonFor, verseMeanings } from './lessons';
 import { localVerse, mergeLocalBibles, validateLocalBible, type LocalBible } from './localSource';
+import { deleteWebBible, importWebBible, readWebBibles } from './webBible';
 import { GrammarPanel, VocabularyPanel } from './LearningPanels';
 import type { LearningView, WordReview } from './storage';
 import './bible.css';
@@ -286,6 +287,9 @@ export function BibleStudy() {
   const [selectedBook, setSelectedBook] = useState(() => selectionForPassageId(loaded.data.passageId).book);
   const [selectedChapter, setSelectedChapter] = useState(() => selectionForPassageId(loaded.data.passageId).chapter);
   const [localBibleMessage, setLocalBibleMessage] = useState<string | null>(null);
+  const webKoFile = useRef<HTMLInputElement>(null);
+  const webEnFile = useRef<HTMLInputElement>(null);
+  const [webImporting, setWebImporting] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
   const autoStartChapterRef = useRef<number | null>(null);
   const activeChapter = useMemo(() => chapterFor(selectedBook, selectedChapter), [selectedBook, selectedChapter]);
@@ -323,8 +327,8 @@ export function BibleStudy() {
   useEffect(() => { if (!saveStudy(data)) setStorageFailed(true); }, [data]);
   useEffect(() => {
     const load = window.electronAPI?.loadLocalBibles;
-    if (!load) return;
-    void load().then(result => {
+    const get = load ? load() : readWebBibles().then(result => ({ ko: { data: result.ko }, en: { data: result.en } }));
+    void get.then(result => {
       const ko = (result.ko?.data ?? []).flatMap(item => { const checked = validateLocalBible(item, 'ko'); return checked.ok ? [checked.data] : []; });
       const en = (result.en?.data ?? []).flatMap(item => { const checked = validateLocalBible(item, 'en'); return checked.ok ? [checked.data] : []; });
       setLocalBibles({ ko, en });
@@ -334,8 +338,43 @@ export function BibleStudy() {
         if ((saved.ko && next.ko === 'default') || (saved.en && next.en === 'default')) setLocalBibleMessage(t.bibleLocalBibleFallback);
         setSelectedVersions(next);
       } catch { /* 기본 판본을 사용합니다 */ }
-    });
+    }).catch(() => setLocalBibleMessage(t.bibleWebStorageError));
   }, [t]);
+  const importBrowserFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>, language: 'ko' | 'en') => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || webImporting) return;
+    setWebImporting(true);
+    try {
+      const bible = await importWebBible(file, language);
+      stopRef.current?.();
+      setLocalBibles(current => ({ ...current, [language]: [...current[language], bible] }));
+      setSelectedVersions(current => {
+        const next = { ...current, [language]: bible.translation };
+        try { localStorage.setItem('tingdong.bible.versions', JSON.stringify(next)); } catch { /* 선택은 현재 화면에 유지합니다 */ }
+        return next;
+      });
+      setLocalBibleMessage(null);
+    } catch { setLocalBibleMessage(t.bibleWebImportError); }
+    finally { setWebImporting(false); }
+  }, [t, webImporting]);
+  const removeBrowserBible = useCallback(async (language: 'ko' | 'en') => {
+    const id = selectedVersions[language];
+    if (id === 'default' || webImporting) return;
+    setWebImporting(true);
+    try {
+      await deleteWebBible(id);
+      stopRef.current?.();
+      setLocalBibles(current => ({ ...current, [language]: current[language].filter(item => item.translation !== id) }));
+      setSelectedVersions(current => {
+        const next = { ...current, [language]: 'default' };
+        try { localStorage.setItem('tingdong.bible.versions', JSON.stringify(next)); } catch { /* 현재 선택을 유지합니다 */ }
+        return next;
+      });
+      setLocalBibleMessage(null);
+    } catch { setLocalBibleMessage(t.bibleWebStorageError); }
+    finally { setWebImporting(false); }
+  }, [selectedVersions, t, webImporting]);
   const importLocalBible = useCallback(async (language: 'ko' | 'en') => {
     const result = await window.electronAPI?.importLocalBible?.(language);
     if (!result || result.code === 'cancelled') return;
@@ -467,15 +506,19 @@ export function BibleStudy() {
           {last && <p className="bible-note">{t.bibleLast}</p>}
         </footer>
         <details className="bible-about"><summary>{t.bibleAbout}</summary><p>{t.bibleAboutText}</p><p>{t.biblePinyinNotice}</p>
-          <div className="bible-local-source"><strong>{t.bibleLocalBibleTitle}</strong><p>{t.bibleLocalBibleDescription}</p>
+          <div className="bible-local-source"><strong>{t.bibleLocalBibleTitle}</strong><p>{window.electronAPI?.importLocalBible ? t.bibleLocalBibleDescription : t.bibleWebBibleDescription}</p>
+            {!window.electronAPI?.importLocalBible && <><input ref={webKoFile} type="file" accept=".bdb,.db,.sqlite" hidden onChange={e => void importBrowserFile(e, 'ko')} /><input ref={webEnFile} type="file" accept=".bdb,.db,.sqlite" hidden onChange={e => void importBrowserFile(e, 'en')} /></>}
             {missingKo.length > 0 && <p className="bible-alert">{t.bibleLocalBibleMissingVerses(t.bibleKorean, missingKo.join(', '))}</p>}
             {missingEn.length > 0 && <p className="bible-alert">{t.bibleLocalBibleMissingVerses(t.bibleEnglish, missingEn.join(', '))}</p>}
             <div className="bible-version-row"><label>{t.bibleKorean}<select value={selectedVersions.ko} onChange={e => { const value = e.target.value; setSelectedVersions(v => ({ ...v, ko: value })); localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, ko: value })); }}>
               <option value="default">{t.bibleDefaultVersion1910}</option>{localBibles.ko.map(item => <option key={item.translation} value={item.translation}>{item.name}</option>)}
-            </select></label><button onClick={() => void importLocalBible('ko')} disabled={!window.electronAPI?.importLocalBible}>{t.bibleLocalBibleImportKo}</button></div>
+            </select></label><button onClick={() => window.electronAPI?.importLocalBible ? void importLocalBible('ko') : webKoFile.current?.click()} disabled={webImporting}>{t.bibleLocalBibleImportKo}</button></div>
             <div className="bible-version-row"><label>{t.bibleEnglish}<select value={selectedVersions.en} onChange={e => { const value = e.target.value; setSelectedVersions(v => ({ ...v, en: value })); localStorage.setItem('tingdong.bible.versions', JSON.stringify({ ...selectedVersions, en: value })); }}>
               <option value="default">{t.bibleDefaultVersionWeb}</option>{localBibles.en.map(item => <option key={item.translation} value={item.translation}>{item.name}</option>)}
-            </select></label><button onClick={() => void importLocalBible('en')} disabled={!window.electronAPI?.importLocalBible}>{t.bibleLocalBibleImportEn}</button></div>
+            </select></label><button onClick={() => window.electronAPI?.importLocalBible ? void importLocalBible('en') : webEnFile.current?.click()} disabled={webImporting}>{t.bibleLocalBibleImportEn}</button></div>
+            {webImporting && <p>{t.bibleWebImporting}</p>}
+            {!window.electronAPI?.importLocalBible && selectedKo && <button disabled={webImporting} onClick={() => void removeBrowserBible('ko')}>{t.bibleWebDelete(selectedKo.name)}</button>}
+            {!window.electronAPI?.importLocalBible && selectedEn && <button disabled={webImporting} onClick={() => void removeBrowserBible('en')}>{t.bibleWebDelete(selectedEn.name)}</button>}
             {(selectedVersions.ko !== 'default' || selectedVersions.en !== 'default') && <p>{t.bibleLocalBibleReady([selectedKo?.name, selectedEn?.name].filter(Boolean).join(' · '))}</p>}
             {localBibleMessage && <p className="bible-alert" role="alert">{localBibleMessage}</p>}
           </div>
