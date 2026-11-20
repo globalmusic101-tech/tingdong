@@ -185,3 +185,9 @@
   .bible-learning-card { padding: 17px; }
   .bible-learning-card > header { align-items: start; flex-wrap: wrap; gap: 6px; }
 }
+
+/* 보조 번역 크기를 별도로 선택한 경우에만 기존 본문 연동을 덮어쓴다. */
+.bible-verses.bible-secondary-font-small .bible-secondary-text { font-size: 16px; }
+.bible-verses.bible-secondary-font-medium .bible-secondary-text { font-size: 18px; }
+.bible-verses.bible-secondary-font-large .bible-secondary-text { font-size: 21px; }
+.bible-verses.bible-secondary-font-xlarge .bible-secondary-text { font-size: 23px; }

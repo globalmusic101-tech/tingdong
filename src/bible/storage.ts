@@ -6,7 +6,7 @@ export const STUDY_KEY = 'tingdong.bible.v1';
 export type LearningView = 'read' | 'words' | 'grammar';
 export type WordReview = 'known' | 'again';
 export type StudyFontSize = 'small' | 'medium' | 'large' | 'xlarge';
-export type StudySettings = { pinyin: boolean; meanings: boolean; rate: number; repeats: number; gapMs: number; engine: 'edge' | 'local'; gender: Gender; tone: Tone; primaryLanguage: BibleLanguage; secondaryLanguages: BibleLanguage[]; fontSize: StudyFontSize; deviceVoiceByLanguage?: Partial<Record<BibleLanguage, string>> };
+export type StudySettings = { pinyin: boolean; meanings: boolean; rate: number; repeats: number; gapMs: number; engine: 'edge' | 'local'; gender: Gender; tone: Tone; primaryLanguage: BibleLanguage; secondaryLanguages: BibleLanguage[]; fontSize: StudyFontSize; secondaryFontSize?: StudyFontSize; deviceVoiceByLanguage?: Partial<Record<BibleLanguage, string>> };
 export type StudyData = { version: 1; mode: Division; passageId: string; sentenceId: string; completed: string[]; settings: StudySettings;
   learningView: LearningView; wordReviews: Record<string, WordReview> };
 export const DEFAULT_STUDY: StudyData = {
@@ -50,6 +50,7 @@ export function validateStudy(value: unknown): StudyData {
       tone: s.tone === 'sermon' || s.tone === 'chat' ? s.tone : 'news',
       primaryLanguage, secondaryLanguages,
       fontSize: s.fontSize === 'small' || s.fontSize === 'large' || s.fontSize === 'xlarge' ? s.fontSize : 'medium',
+      secondaryFontSize: s.secondaryFontSize === 'small' || s.secondaryFontSize === 'medium' || s.secondaryFontSize === 'large' || s.secondaryFontSize === 'xlarge' ? s.secondaryFontSize : undefined,
       deviceVoiceByLanguage,
     },
   };

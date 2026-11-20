@@ -26,6 +26,16 @@ describe('Bible progress storage', () => {
     expect(data.settings).toEqual(DEFAULT_STUDY.settings);
     expect(data.completed).toEqual([storyPassages[0].id]);
   });
+  it('preserves a separate translation size and safely handles missing or invalid values', () => {
+    for (const size of ['small', 'medium', 'large', 'xlarge']) {
+      const loaded = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, fontSize: 'small', secondaryFontSize: size } });
+      expect(loaded.settings.fontSize).toBe('small');
+      expect(loaded.settings.secondaryFontSize).toBe(size);
+      expect(validateStudy(JSON.parse(JSON.stringify(loaded))).settings.secondaryFontSize).toBe(size);
+    }
+    expect(validateStudy(DEFAULT_STUDY).settings.secondaryFontSize).toBeUndefined();
+    expect(validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, secondaryFontSize: 'invalid' } }).settings.secondaryFontSize).toBeUndefined();
+  });
   it('accepts the one-time repeat setting', () => {
     const data = validateStudy({ ...DEFAULT_STUDY, settings: { ...DEFAULT_STUDY.settings, repeats: 1 } });
     expect(data.settings.repeats).toBe(1);
